@@ -2,7 +2,8 @@ import threading
 import time
 from peer import PeerNode
 
-def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
+
+def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
     peers = []
     seeder_ports = [6881]
     leecher_ports = [6882, 6883, 6884]
@@ -13,7 +14,9 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
         seeder_id = f"seeder00{i+1}"
         seeder_ip = "127.0.0.1"
         seeder_port = seeder_ports[i]
-        seeder = PeerNode(shared_file, seeder_id, seeder_ip, seeder_port, is_seeder=True)
+        seeder = PeerNode(
+            shared_file, seeder_id, seeder_ip, seeder_port, is_seeder=True
+        )
         seeder.register_with_tracker()
         peers.append(seeder)
 
@@ -28,7 +31,9 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
         leecher_id = f"leecher00{i+1}"
         leecher_ip = "127.0.0.1"
         leecher_port = leecher_ports[i]
-        leecher = PeerNode(shared_file, leecher_id, leecher_ip, leecher_port, is_seeder=False)
+        leecher = PeerNode(
+            shared_file, leecher_id, leecher_ip, leecher_port, is_seeder=False
+        )
         leecher.register_with_tracker()
         peers.append(leecher)
 
@@ -36,7 +41,9 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
         server_thread = threading.Thread(target=leecher.start_server)
         server_thread.daemon = True
         server_thread.start()
-        print(f"{leecher_id} is running on port {leecher_port} and downloading {shared_file}")
+        print(
+            f"{leecher_id} is running on port {leecher_port} and downloading {shared_file}"
+        )
 
     # Give some time for peers to start up
     time.sleep(2)
@@ -45,13 +52,16 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
     for leecher in [p for p in peers if not p.is_seeder]:
         for file_info in leecher.files:
             file_path = file_info["path"]
+            print(file_path)
             for i in range(file_info["num_pieces"]):
                 if not leecher.pieces_downloaded[file_path][i]:
                     for seeder in [p for p in peers if p.is_seeder]:
                         try:
                             leecher.download_piece(file_path, i, seeder.ip, seeder.port)
                         except Exception as e:
-                            print(f"Error downloading piece {i} of {file_path} from {seeder.peer_id}: {e}")
+                            print(
+                                f"Error downloading piece {i} of {file_path} from {seeder.peer_id}: {e}"
+                            )
                         break
 
     print("Press Ctrl+C to stop all peers...")
@@ -64,6 +74,7 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
         print("\nShutting down all peers...")
         for peer in peers:
             peer.shutdown()
+
 
 if __name__ == "__main__":
     run_seeders_and_leechers()
