@@ -1,38 +1,53 @@
 from lib import *
 from peer import PeerNode
-def signal_handler(signal, frame, shutdown_event):
-    print("\nShutting down peer...")
-    shutdown_event.set()
+import threading
+import time
 
-def run_peer():
-    peer_id = "peer001"
-    ip = "127.0.0.1"
-    port = 6881
-    shared_files = {
-        "file1_hash": "shared/file1.dat",
-        "file2_hash": "shared/file2.dat"
-    }
+def run_multiple_peers(num_peers=3):
+    peers = []
+    ports = [6881, 6882, 6883]  # Example ports for multiple peers
+    shared_files = ["shared/file1.dat", "shared/file2.dat", "shared/file3.dat"]
 
-    peer = PeerNode(peer_id, ip, port, shared_files)
-    peer.register_with_tracker()
+    # Initialize and start multiple peers
+    for i in range(num_peers):
+        peer_id = f"peer00{i+1}"
+        ip = "127.0.0.1"
+        port = ports[i]
+        file_path = shared_files[i]
 
-    # Start peer server in a separate thread
-    server_thread = threading.Thread(target=peer.start_server)
-    server_thread.start()
+        # Create a PeerNode instance
+        peer = PeerNode(peer_id, ip, port, file_path)
+        peer.register_with_tracker()
+        peers.append(peer)
 
-    # Use an Event to block the main thread and keep the server running
-    shutdown_event = threading.Event()
+        # Start the peer server in a separate thread
+        server_thread = threading.Thread(target=peer.start_server)
+        server_thread.daemon = True
+        server_thread.start()
 
-    # Register the signal handler for Ctrl+C
-    signal.signal(signal.SIGINT, lambda s, f: signal_handler(s, f, shutdown_event))
+        print(f"{peer_id} is running on port {port} and sharing {file_path}")
+
+    # Give some time for peers to start up
+    time.sleep(2)
+
+    # Example: Each peer tries to download a piece from another peer
+    for i, peer in enumerate(peers):
+        target_peer_index = (i + 1) % num_peers  # Download from the next peer
+        target_ip = "127.0.0.1"
+        target_port = ports[target_peer_index]
+        print(f"{peer.peer_id} trying to download piece 0 from {target_ip}:{target_port}")
+        peer.download_piece(0, target_ip, target_port)
+
+    print("Press Ctrl+C to stop all peers...")
 
     try:
-        peer.download_file("file1_hash")
-        print("Press Ctrl+C to stop the server...")
-        shutdown_event.wait()  # Block here until the shutdown event is set
-    finally:
-        peer.shutdown()
-        server_thread.join()
+        # Keep the script running to allow peers to communicate
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down all peers...")
+        for peer in peers:
+            peer.shutdown()
 
 if __name__ == '__main__':
-    run_peer()
+    run_multiple_peers()
