@@ -1,8 +1,9 @@
 from lib import *
 
 
-TRACKER_URL = 'http://localhost:8000'
+TRACKER_URL = "http://localhost:8000"
 PIECE_SIZE = 512 * 1024  # 512KB
+    
 
 class PeerNode:
     def __init__(self, peer_id, ip, port, file_path):
@@ -11,7 +12,9 @@ class PeerNode:
         self.port = port
         self.file_path = file_path
         self.pieces = self.split_file_into_pieces(file_path)
-        self.shared_pieces = {i: True for i in range(len(self.pieces))}  # Dictionary to track pieces
+        self.shared_pieces = {
+            i: True for i in range(len(self.pieces))
+        }  # Dictionary to track pieces
         self.shutdown_event = threading.Event()
         self.server_socket = None
         self.lock = threading.Lock()
@@ -20,7 +23,7 @@ class PeerNode:
     def split_file_into_pieces(self, file_path):
         """Split the file into pieces of size `PIECE_SIZE`."""
         pieces = []
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             while True:
                 piece = f.read(PIECE_SIZE)
                 if not piece:
@@ -34,7 +37,7 @@ class PeerNode:
             "peer_id": self.peer_id,
             "ip": self.ip,
             "port": self.port,
-            "num_pieces": len(self.pieces)
+            "num_pieces": len(self.pieces),
         }
         try:
             response = requests.post(f"{TRACKER_URL}/announce", json=data)
@@ -46,26 +49,28 @@ class PeerNode:
             print(f"Error registering with tracker: {e}")
 
     def download_piece(self, piece_index, peer_ip, peer_port):
-        """Download a specific piece from another peer."""
+        """Download a specific   piece from another peer."""
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((peer_ip, peer_port))
                 s.sendall(f"REQUEST_PIECE {piece_index}".encode())
-                
+
                 # Receive the piece
-                piece_data = b''
+                piece_data = b""
                 while True:
                     data = s.recv(1024)
                     if not data:
                         break
                     piece_data += data
-                
+
                 # Save the downloaded piece
-                with open(f"downloaded_piece_{piece_index}.dat", 'wb') as f:
+                with open(f"downloaded_piece_{piece_index}.dat", "wb") as f:
                     f.write(piece_data)
                 print(f"Piece {piece_index} downloaded from {peer_ip}:{peer_port}")
         except Exception as e:
-            print(f"Error downloading piece {piece_index} from {peer_ip}:{peer_port} - {e}")
+            print(
+                f"Error downloading piece {piece_index} from {peer_ip}:{peer_port} - {e}"
+            )
 
     def start_server(self):
         """Starts a peer server to upload pieces to others."""
@@ -108,4 +113,3 @@ class PeerNode:
                 self.server_socket.close()
             except Exception as e:
                 print(f"Error closing server socket: {e}")
-
