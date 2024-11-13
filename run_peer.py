@@ -1,42 +1,58 @@
-from lib import *
-from peer import PeerNode
 import threading
 import time
+from peer import PeerNode
 
-def run_multiple_peers(num_peers=3):
+def run_seeders_and_leechers(num_seeders=1, num_leechers=3):
     peers = []
-    ports = [6881, 6882, 6883]  # Example ports for multiple peers
-    shared_files = ["shared/file1.dat", "shared/file2.dat", "shared/file3.dat"]
+    seeder_ports = [6881]
+    leecher_ports = [6882, 6883, 6884]
+    shared_file = "./torrents/shared.torrent"
 
-    # Initialize and start multiple peers
-    for i in range(num_peers):
-        peer_id = f"peer00{i+1}"
-        ip = "127.0.0.1"
-        port = ports[i]
-        file_path = shared_files[i]
+    # Initialize and start seeders
+    for i in range(num_seeders):
+        seeder_id = f"seeder00{i+1}"
+        seeder_ip = "127.0.0.1"
+        seeder_port = seeder_ports[i]
+        seeder = PeerNode(shared_file, seeder_id, seeder_ip, seeder_port, is_seeder=True)
+        seeder.register_with_tracker()
+        peers.append(seeder)
 
-        # Create a PeerNode instance
-        peer = PeerNode(peer_id, ip, port, file_path)
-        peer.register_with_tracker()
-        peers.append(peer)
-
-        # Start the peer server in a separate thread
-        server_thread = threading.Thread(target=peer.start_server)
+        # Start the seeder server in a separate thread
+        server_thread = threading.Thread(target=seeder.start_server)
         server_thread.daemon = True
         server_thread.start()
+        print(f"{seeder_id} is running on port {seeder_port} and sharing {shared_file}")
 
-        print(f"{peer_id} is running on port {port} and sharing {file_path}")
+    # Initialize and start leechers
+    for i in range(num_leechers):
+        leecher_id = f"leecher00{i+1}"
+        leecher_ip = "127.0.0.1"
+        leecher_port = leecher_ports[i]
+        leecher = PeerNode(shared_file, leecher_id, leecher_ip, leecher_port, is_seeder=False)
+        leecher.register_with_tracker()
+        peers.append(leecher)
+
+        # Start the leecher server in a separate thread
+        server_thread = threading.Thread(target=leecher.start_server)
+        server_thread.daemon = True
+        server_thread.start()
+        print(f"{leecher_id} is running on port {leecher_port} and downloading {shared_file}")
 
     # Give some time for peers to start up
     time.sleep(2)
 
-    # Example: Each peer tries to download a piece from another peer
-    for i, peer in enumerate(peers):
-        target_peer_index = (i + 1) % num_peers  # Download from the next peer
-        target_ip = "127.0.0.1"
-        target_port = ports[target_peer_index]
-        print(f"{peer.peer_id} trying to download piece 0 from {target_ip}:{target_port}")
-        peer.download_piece(0, target_ip, target_port)
+    # Leechers start downloading from seeders
+    for leecher in [p for p in peers if not p.is_seeder]:
+        for file_info in leecher.files:
+            file_path = file_info["path"]
+            for i in range(file_info["num_pieces"]):
+                if not leecher.pieces_downloaded[file_path][i]:
+                    for seeder in [p for p in peers if p.is_seeder]:
+                        try:
+                            leecher.download_piece(file_path, i, seeder.ip, seeder.port)
+                        except Exception as e:
+                            print(f"Error downloading piece {i} of {file_path} from {seeder.peer_id}: {e}")
+                        break
 
     print("Press Ctrl+C to stop all peers...")
 
@@ -49,5 +65,5 @@ def run_multiple_peers(num_peers=3):
         for peer in peers:
             peer.shutdown()
 
-if __name__ == '__main__':
-    run_multiple_peers()
+if __name__ == "__main__":
+    run_seeders_and_leechers()
