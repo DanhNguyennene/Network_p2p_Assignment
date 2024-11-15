@@ -1,35 +1,31 @@
-import socket
-import threading
-import os
-import bencodepy
-import requests
-from concurrent.futures import ThreadPoolExecutor
-from collections import deque
+from lib import *
+from torrent import *
 
 
 class PeerNode:
     def __init__(
         self,
-        torrent_file,
+        torrent,
         peer_id,
         ip,
         port,
         is_seeder=False,
-        destination_dir_name="downloads",
     ):
         self.peer_id = peer_id
         self.ip = ip
         self.port = port
         self.is_seeder = is_seeder
-        self.origin_dir_name = None
         self.server_socket = None
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.shutdown_event = threading.Event()
         self.downloaded = 0
         self.uploaded = 0
-        self.destination_dir_name = destination_dir_name
 
-        self.load_torrent(torrent_file)
+        self.torrent = torrent
+        self.tracker_url = torrent.tracker_url
+        self.name = torrent.name
+        self.file_hash = torrent.get_info_hash()
+
         # Initialize pieces tracking for multiple files
         self.pieces_downloaded = {
             file["path"]: [False] * file["num_pieces"] for file in self.files
@@ -68,68 +64,34 @@ class PeerNode:
         except Exception as e:
             print(f"[ERROR] Error creating file or directory: {e}")
 
-    def load_torrent(self, torrent_file):
-        """Load metadata from the .torrent file."""
-        with open(torrent_file, "rb") as f:
-            torrent_data = bencodepy.decode(f.read())
-
-        # print("[DEBUG] Torrent data:", torrent_data)
-        self.tracker_url = torrent_data[b"announce"].decode()
-        self.piece_length = torrent_data[b"info"][b"piece length"]
-        self.pieces = torrent_data[b"info"][b"pieces"]
-        self.num_pieces = len(self.pieces) // 20
-        self.files = []
-
-        # Load files metadata and create necessary files/directories
-        parent_dir = torrent_data[b"info"][b"name"].decode()
-        self.origin_dir_name = parent_dir
-        for file_info in torrent_data[b"info"][b"files"]:
-            # Debugging statement to inspect file_info structure
-            # print(f"[DEBUG] file_info: {file_info}")
-
-            # Ensure the 'path' key exists
-            if b"path" not in file_info:
-                print(f"[ERROR] Missing 'path' in file_info: {file_info}")
-                continue
-
-            # Ensure the 'length' key exists
-            if b"length" not in file_info:
-                print(f"[ERROR] Missing 'length' in file_info: {file_info}")
-                continue
-
-            # Decode the path components and add to files list
-            decoded_path = [part.decode() for part in file_info[b"path"]]
-            file_path = os.path.join("", *decoded_path)
-            file_size = file_info[b"length"]
-
-            # Create file or directory
-            self.create_file_or_directory(file_info)
-            self.files.append(
-                {
-                    "path": file_path,
-                    "length": file_size,
-                    "num_pieces": (file_size + self.piece_length - 1)
-                    // self.piece_length,
-                }
-            )
-
     def register_with_tracker(self):
         """Register with the tracker and get a list of peers."""
         data = {
             "peer_id": self.peer_id,
             "ip": self.ip,
             "port": self.port,
-            "file_hash": self.pieces.hex(),
+            "file_hash": self.file_hash,
             "downloaded": self.downloaded,
             "uploaded": self.uploaded,
             "is_seeder": self.is_seeder,
         }
         try:
-            response = requests.post(self.tracker_url, json=data)
+            response = requests.post(self.tracker_url + "announce", json=data)
             return response.json()
         except requests.RequestException as e:
-            print(f"Error communicating with tracker: {e}")
+            print(f"[ERROR] registering with tracker: {e}")
             return []
+
+    def get_peers(self):
+        """Get the list of peers from the tracker"""
+        data = {
+            "file_hash" = self.file_hash
+        }
+        try:
+            response = requests.get(self.tracker_url + "get_peers", json=data)
+            return response.json()
+        except request.RequestException as e:
+            print(f"[ERROR] fetching data from tracker: {e}")
 
     def start_server(self):
         """Start the peer server to handle piece requests."""
@@ -183,13 +145,13 @@ class PeerNode:
             print(f"[ERROR] Error reading piece {index} from {file_path}: {e}")
             return b""
 
-    def download_piece(self, file_path, piece_index, peer_ip, peer_port):
+    def download_piece(self, file_name, piece_index, peer_ip, peer_port):
         """Download a specific piece from a peer."""
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.connect((peer_ip, peer_port))
                 s.sendall(
-                    f"REQUEST_PIECE\${os.path.join(self.origin_dir_name,file_path)}\${piece_index}".encode()
+                    f"REQUEST_PIECE\${os.path.join(self.origin_dir_name, file_name)}\${piece_index}".encode()
                 )
                 print(
                     f"Requested piece {piece_index} of {self.origin_dir_name} {file_path} from {peer_ip}:{peer_port}"

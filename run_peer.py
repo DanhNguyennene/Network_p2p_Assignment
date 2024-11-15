@@ -1,23 +1,26 @@
-import threading
-import time
+from lib import *
+from utils import *
 from peer import PeerNode
+from torrent import Torrent
 
 
 def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
+    generate_torrent("shared", "/", "torrents")
     peers = []
     seeder_ports = [6881]
     leecher_ports = [6882, 6883, 6884]
-    shared_file = "./torrents/shared.torrent"
+
+    torrent = Torrent()
+    torrent.load_torrent(r"torrents\shared.torrent")
 
     # Initialize and start seeders
     for i in range(num_seeders):
         seeder_id = f"seeder00{i+1}"
         seeder_ip = "127.0.0.1"
         seeder_port = seeder_ports[i]
-        seeder = PeerNode(
-            shared_file, seeder_id, seeder_ip, seeder_port, is_seeder=True
-        )
+        seeder = PeerNode(torrent, seeder_id, seeder_ip, seeder_port, is_seeder=True)
         seeder.register_with_tracker()
+        seeder.get_peers()
         peers.append(seeder)
 
         # Start the seeder server in a separate thread
