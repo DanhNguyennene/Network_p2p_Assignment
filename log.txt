@@ -1,0 +1,316 @@
+[DEBUG] Found [('file.dat', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file.dat'), ('file1.dat', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file1.dat'), ('file1.txt', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file1.txt'), ('file2.dat', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file2.dat'), ('file2.txt', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file2.txt'), ('file3.dat', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\file3.dat'), ('Task 4.pdf', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\Task 4.pdf'), ('test\\test1\\file1_1.txt', 'C:\\Just_Learning\\University\\Semester 5\\Network\\CO3093 -  Mạng máy tính\\Assignment\\Network_p2p_Assignment\\TO_BE_SHARED\\shared\\test\\test1\\file1_1.txt')] files in directory: TO_BE_SHARED\shared
+[DEBUG] Split piece 0: Size=524288, Hash=2a2b0bff4da8cdf2a0eb4d1e082b91213759428e
+[DEBUG] Split piece 1: Size=524288, Hash=945af20567ea0b6248c878a27385a99283610bd0
+[DEBUG] Split piece 2: Size=524288, Hash=96df86eaf022814886e80e0e6d8c8b62f9aaf57b
+[DEBUG] Split piece 3: Size=163777, Hash=59446b95b8f3991a95457ab67d9aa8607fc678b8
+[DEBUG] File smaller than piece size: Size=308474, Hash=56501d36b0fd7f22ea987833c8eb8299385c5154
+[DEBUG] File smaller than piece size: Size=27, Hash=52a00b8461593ce33409d7c5d0411699cbf9cda3
+[DEBUG] File smaller than piece size: Size=200680, Hash=1d908f01806426dedbcb52dc3f112ca6c492a69a
+[DEBUG] File smaller than piece size: Size=28, Hash=a54b8622c3183d95644223acf40b97b4271ab39e
+[DEBUG] File smaller than piece size: Size=191, Hash=f41e05a756f3eebaf8a770f0fe0e5435b1058167
+[DEBUG] Split piece 0: Size=524288, Hash=d3e6064751b7b16f6b54c01e6e3b41bdbeb863ad
+[DEBUG] Split piece 1: Size=524288, Hash=285e0c58a61343e07c5776b0c7ae59af981c1aee
+[DEBUG] Split piece 2: Size=524288, Hash=015aebd33f9a2d6b8b526a240664e11cfea1081b
+[DEBUG] Split piece 3: Size=524288, Hash=8fde457aa378d703cd0775888d5e67a74cfafba0
+[DEBUG] Split piece 4: Size=524288, Hash=53a28498817a81306e72f8c7effe95ae58f721b7
+[DEBUG] Split piece 5: Size=524288, Hash=fc81ab4f26d4cd4c279dfa1529e1a13623c5031d
+[DEBUG] Split piece 6: Size=524288, Hash=c93f727e69e851613f15ad634bd7f3b10840f453
+[DEBUG] Split piece 7: Size=506227, Hash=c58ff579983647276b630f8fa389a01290f4ee0a
+[DEBUG] File smaller than piece size: Size=0, Hash=da39a3ee5e6b4b0d3255bfef95601890afd80709
+INITIALIZING PIECE MANAGER FOR SEED
+[INFO] Loading torrent file: OrderedDict({b'announce': b'http://127.0.0.1:8000/', b'info': OrderedDict({b'piece_length': 524288, b'pieces': b'*+\x0b\xffM\xa8\xcd\xf2\xa0\xebM\x1e\x08+\x91!7YB\x8e\x94Z\xf2\x05g\xea\x0bbH\xc8x\xa2s\x85\xa9\x92\x83a\x0b\xd0\x96\xdf\x86\xea\xf0"\x81H\x86\xe8\x0e\x0em\x8c\x8bb\xf9\xaa\xf5{YDk\x95\xb8\xf3\x99\x1a\x95Ez\xb6}\x9a\xa8`\x7f\xc6x\xb8VP\x1d6\xb0\xfd\x7f"\xea\x98x3\xc8\xeb\x82\x998\\QTR\xa0\x0b\x84aY<\xe34\t\xd7\xc5\xd0A\x16\x99\xcb\xf9\xcd\xa3\x1d\x90\x8f\x01\x80d&\xde\xdb\xcbR\xdc?\x11,\xa6\xc4\x92\xa6\x9a\xa5K\x86"\xc3\x18=\x95dB#\xac\xf4\x0b\x97\xb4\'\x1a\xb3\x9e\xf4\x1e\x05\xa7V\xf3\xee\xba\xf8\xa7p\xf0\xfe\x0eT5\xb1\x05\x81g\xd3\xe6\x06GQ\xb7\xb1okT\xc0\x1en;A\xbd\xbe\xb8c\xad(^\x0cX\xa6\x13C\xe0|Wv\xb0\xc7\xaeY\xaf\x98\x1c\x1a\xee\x01Z\xeb\xd3?\x9a-k\x8bRj$\x06d\xe1\x1c\xfe\xa1\x08\x1b\x8f\xdeEz\xa3x\xd7\x03\xcd\x07u\x88\x8d^g\xa7L\xfa\xfb\xa0S\xa2\x84\x98\x81z\x810nr\xf8\xc7\xef\xfe\x95\xaeX\xf7!\xb7\xfc\x81\xabO&\xd4\xcdL\'\x9d\xfa\x15)\xe1\xa16#\xc5\x03\x1d\xc9?r~i\xe8Qa?\x15\xadcK\xd7\xf3\xb1\x08@\xf4S\xc5\x8f\xf5y\x986G\'kc\x0f\x8f\xa3\x89\xa0\x12\x90\xf4\xee\n\xda9\xa3\xee^kK\r2U\xbf\xef\x95`\x18\x90\xaf\xd8\x07\t', b'name': b'shared', b'files': [OrderedDict({b'length': 1736641, b'path': [b'file.dat']}), OrderedDict({b'length': 308474, b'path': [b'file1.dat']}), OrderedDict({b'length': 27, b'path': [b'file1.txt']}), OrderedDict({b'length': 200680, b'path': [b'file2.dat']}), OrderedDict({b'length': 28, b'path': [b'file2.txt']}), OrderedDict({b'length': 191, b'path': [b'file3.dat']}), OrderedDict({b'length': 4176243, b'path': [b'Task 4.pdf']}), OrderedDict({b'length': 0, b'path': [b'test', b'test1', b'file1_1.txt']})]})})
+b'file.dat'
+./TO_BE_SHARED\shared\file.dat
+b'file1.dat'
+./TO_BE_SHARED\shared\file1.dat
+b'file1.txt'
+./TO_BE_SHARED\shared\file1.txt
+b'file2.dat'
+./TO_BE_SHARED\shared\file2.dat
+b'file2.txt'
+./TO_BE_SHARED\shared\file2.txt
+b'file3.dat'
+./TO_BE_SHARED\shared\file3.dat
+b'Task 4.pdf'
+./TO_BE_SHARED\shared\Task 4.pdf
+b'test'
+./TO_BE_SHARED\shared\test
+[INFO] Loaded .torrent file: <torrent.Torrent object at 0x000002371D53B860>
+[INFO] Total pieces: 18, Piece length: 524288
+[INFO] Reading piece 0 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 1 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 2 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 15 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 16 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 17 from ./TO_BE_SHARED\shared\test
+INITIALIZING PIECE MANAGER FOR LEECH
+[INFO] Loading torrent file: OrderedDict({b'announce': b'http://127.0.0.1:8000/', b'info': OrderedDict({b'piece_length': 524288, b'pieces': b'*+\x0b\xffM\xa8\xcd\xf2\xa0\xebM\x1e\x08+\x91!7YB\x8e\x94Z\xf2\x05g\xea\x0bbH\xc8x\xa2s\x85\xa9\x92\x83a\x0b\xd0\x96\xdf\x86\xea\xf0"\x81H\x86\xe8\x0e\x0em\x8c\x8bb\xf9\xaa\xf5{YDk\x95\xb8\xf3\x99\x1a\x95Ez\xb6}\x9a\xa8`\x7f\xc6x\xb8VP\x1d6\xb0\xfd\x7f"\xea\x98x3\xc8\xeb\x82\x998\\QTR\xa0\x0b\x84aY<\xe34\t\xd7\xc5\xd0A\x16\x99\xcb\xf9\xcd\xa3\x1d\x90\x8f\x01\x80d&\xde\xdb\xcbR\xdc?\x11,\xa6\xc4\x92\xa6\x9a\xa5K\x86"\xc3\x18=\x95dB#\xac\xf4\x0b\x97\xb4\'\x1a\xb3\x9e\xf4\x1e\x05\xa7V\xf3\xee\xba\xf8\xa7p\xf0\xfe\x0eT5\xb1\x05\x81g\xd3\xe6\x06GQ\xb7\xb1okT\xc0\x1en;A\xbd\xbe\xb8c\xad(^\x0cX\xa6\x13C\xe0|Wv\xb0\xc7\xaeY\xaf\x98\x1c\x1a\xee\x01Z\xeb\xd3?\x9a-k\x8bRj$\x06d\xe1\x1c\xfe\xa1\x08\x1b\x8f\xdeEz\xa3x\xd7\x03\xcd\x07u\x88\x8d^g\xa7L\xfa\xfb\xa0S\xa2\x84\x98\x81z\x810nr\xf8\xc7\xef\xfe\x95\xaeX\xf7!\xb7\xfc\x81\xabO&\xd4\xcdL\'\x9d\xfa\x15)\xe1\xa16#\xc5\x03\x1d\xc9?r~i\xe8Qa?\x15\xadcK\xd7\xf3\xb1\x08@\xf4S\xc5\x8f\xf5y\x986G\'kc\x0f\x8f\xa3\x89\xa0\x12\x90\xf4\xee\n\xda9\xa3\xee^kK\r2U\xbf\xef\x95`\x18\x90\xaf\xd8\x07\t', b'name': b'shared', b'files': [OrderedDict({b'length': 1736641, b'path': [b'file.dat']}), OrderedDict({b'length': 308474, b'path': [b'file1.dat']}), OrderedDict({b'length': 27, b'path': [b'file1.txt']}), OrderedDict({b'length': 200680, b'path': [b'file2.dat']}), OrderedDict({b'length': 28, b'path': [b'file2.txt']}), OrderedDict({b'length': 191, b'path': [b'file3.dat']}), OrderedDict({b'length': 4176243, b'path': [b'Task 4.pdf']}), OrderedDict({b'length': 0, b'path': [b'test', b'test1', b'file1_1.txt']})]})})
+b'file.dat'
+./downloads\shared\file.dat
+b'file1.dat'
+./downloads\shared\file1.dat
+b'file1.txt'
+./downloads\shared\file1.txt
+b'file2.dat'
+./downloads\shared\file2.dat
+b'file2.txt'
+./downloads\shared\file2.txt
+b'file3.dat'
+./downloads\shared\file3.dat
+b'Task 4.pdf'
+./downloads\shared\Task 4.pdf
+b'test'
+./downloads\shared\test
+[INFO] Loaded .torrent file: <torrent.Torrent object at 0x000002371D53B860>
+[INFO] Total pieces: 18, Piece length: 524288
+[INFO] Reading piece 0 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 0 is not available yet.
+[INFO] Reading piece 1 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 1 is not available yet.
+[INFO] Reading piece 2 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 2 is not available yet.
+[INFO] Reading piece 3 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 3 is not available yet.
+[INFO] Reading piece 4 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 4 is not available yet.
+[INFO] Reading piece 5 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 5 is not available yet.
+[INFO] Reading piece 6 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 6 is not available yet.
+[INFO] Reading piece 7 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 7 is not available yet.
+[INFO] Reading piece 8 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 8 is not available yet.
+[INFO] Reading piece 9 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 9 is not available yet.
+[INFO] Reading piece 10 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 10 is not available yet.
+[INFO] Reading piece 11 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 11 is not available yet.
+[INFO] Reading piece 12 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 12 is not available yet.
+[INFO] Reading piece 13 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 13 is not available yet.
+[INFO] Reading piece 14 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 14 is not available yet.
+[INFO] Reading piece 15 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 15 is not available yet.
+[INFO] Reading piece 16 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 16 is not available yet.
+[INFO] Reading piece 17 from ./downloads\shared\file.dat
+[INFO] File not found: ./downloads\shared\file.dat. Piece 17 is not available yet.
+[DEBUG] Registering with tracker: http://127.0.0.1:8000/announce
+[ERROR] registering with tracker: Expecting value: line 1 column 1 (char 0)
+A1 is running on port 6881 and sharing 
+INITIALIZING PIECE MANAGER FOR SEED
+[INFO] Loading torrent file: OrderedDict({b'announce': b'http://127.0.0.1:8000/', b'info': OrderedDict({b'piece_length': 524288, b'pieces': b'*+\x0b\xffM\xa8\xcd\xf2\xa0\xebM\x1e\x08+\x91!7YB\x8e\x94Z\xf2\x05g\xea\x0bbH\xc8x\xa2s\x85\xa9\x92\x83a\x0b\xd0\x96\xdf\x86\xea\xf0"\x81H\x86\xe8\x0e\x0em\x8c\x8bb\xf9\xaa\xf5{YDk\x95\xb8\xf3\x99\x1a\x95Ez\xb6}\x9a\xa8`\x7f\xc6x\xb8VP\x1d6\xb0\xfd\x7f"\xea\x98x3\xc8\xeb\x82\x998\\QTR\xa0\x0b\x84aY<\xe34\t\xd7\xc5\xd0A\x16\x99\xcb\xf9\xcd\xa3\x1d\x90\x8f\x01\x80d&\xde\xdb\xcbR\xdc?\x11,\xa6\xc4\x92\xa6\x9a\xa5K\x86"\xc3\x18=\x95dB#\xac\xf4\x0b\x97\xb4\'\x1a\xb3\x9e\xf4\x1e\x05\xa7V\xf3\xee\xba\xf8\xa7p\xf0\xfe\x0eT5\xb1\x05\x81g\xd3\xe6\x06GQ\xb7\xb1okT\xc0\x1en;A\xbd\xbe\xb8c\xad(^\x0cX\xa6\x13C\xe0|Wv\xb0\xc7\xaeY\xaf\x98\x1c\x1a\xee\x01Z\xeb\xd3?\x9a-k\x8bRj$\x06d\xe1\x1c\xfe\xa1\x08\x1b\x8f\xdeEz\xa3x\xd7\x03\xcd\x07u\x88\x8d^g\xa7L\xfa\xfb\xa0S\xa2\x84\x98\x81z\x810nr\xf8\xc7\xef\xfe\x95\xaeX\xf7!\xb7\xfc\x81\xabO&\xd4\xcdL\'\x9d\xfa\x15)\xe1\xa16#\xc5\x03\x1d\xc9?r~i\xe8Qa?\x15\xadcK\xd7\xf3\xb1\x08@\xf4S\xc5\x8f\xf5y\x986G\'kc\x0f\x8f\xa3\x89\xa0\x12\x90\xf4\xee\n\xda9\xa3\xee^kK\r2U\xbf\xef\x95`\x18\x90\xaf\xd8\x07\t', b'name': b'shared', b'files': [OrderedDict({b'length': 1736641, b'path': [b'file.dat']}), OrderedDict({b'length': 308474, b'path': [b'file1.dat']}), OrderedDict({b'length': 27, b'path': [b'file1.txt']}), OrderedDict({b'length': 200680, b'path': [b'file2.dat']}), OrderedDict({b'length': 28, b'path': [b'file2.txt']}), OrderedDict({b'length': 191, b'path': [b'file3.dat']}), OrderedDict({b'length': 4176243, b'path': [b'Task 4.pdf']}), OrderedDict({b'length': 0, b'path': [b'test', b'test1', b'file1_1.txt']})]})})
+b'file.dat'
+./TO_BE_SHARED\shared\file.dat
+b'file1.dat'
+./TO_BE_SHARED\shared\file1.dat
+b'file1.txt'
+./TO_BE_SHARED\shared\file1.txt
+b'file2.dat'
+./TO_BE_SHARED\shared\file2.dat
+b'file2.txt'
+./TO_BE_SHARED\shared\file2.txt
+b'file3.dat'
+./TO_BE_SHARED\shared\file3.dat
+b'Task 4.pdf'
+./TO_BE_SHARED\shared\Task 4.pdf
+b'test'
+./TO_BE_SHARED\shared\test
+[INFO] Loaded .torrent file: <torrent.Torrent object at 0x000002371D53B860>
+[INFO] Total pieces: 18, Piece length: 524288
+[INFO] Reading piece 0 from ./TO_BE_SHARED\shared\file.dat
+Peer -A11000-84480730- listening on 127.0.0.1:6881
+[INFO] Reading piece 1 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 2 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 3 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 4 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 5 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 6 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 7 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 8 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 9 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 10 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 11 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 12 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\Task 4.pdf
+[INFO] Reading piece 13 from ./TO_BE_SHARED\shared\test
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file1.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file1.txt
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file2.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file2.txt
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\file3.dat
+[INFO] Reading piece 14 from ./TO_BE_SHARED\shared\Task 4.pdf

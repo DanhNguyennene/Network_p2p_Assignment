@@ -120,43 +120,100 @@ class Peer:
         print(f"Accepted connection from {addr}")
         
         try:
+            # Step 1: Receive handshake and send response
             request = conn.recv(1024)
             data = self.message_parser.parse_message(request)
-            if data["type"] != "handshake":
+            if data is None or data["type"] != "handshake":
+                print(f"[ERROR] Invalid handshake from {addr}")
                 return
             
+            # Send handshake response
             response = self.message_factory.handshake(self.info_hash, self.peer_id.encode())
             conn.sendall(response)
+            print(f"[INFO] Handshake with {addr} completed")
 
-            while True:
-                request = conn.recv(1024)
-                if not request:
+            # Step 2: Request bitfield from the peer
+            bitfield_request = self.message_factory.bitfield()
+            conn.sendall(bitfield_request)
+            print(f"[INFO] Sent bitfield request to {addr}")
+
+            # Step 3: Receive the bitfield from the peer
+            conn.settimeout(10.0)
+            bitfield_response = conn.recv(1024)
+            bitfield_data = self.message_parser.parse_message(bitfield_response)
+
+            if bitfield_data is None or bitfield_data["type"] != "bitfield":
+                print(f"[ERROR] Failed to receive a valid bitfield from {addr}")
+                return
+
+            peer_bitfield = bitfield_data["bitfield"]
+            print(f"[INFO] Received bitfield from {addr}: {peer_bitfield}")
+
+            # Step 4: Filter missing pieces using the peer's bitfield
+            missing_pieces = self.get_missing_pieces_from_peer(peer_bitfield)
+
+            # Step 5: Handle messages from the peer
+            for _ in len(missing_pieces):
+                try:
+                    conn.settimeout(10.0)
+                    request = conn.recv(1024)
+                    if not request:
+                        print(f"[INFO] Connection closed by peer {addr}")
+                        break
+
+                    data = self.message_parser.parse_message(request)
+                    if data is None:
+                        print(f"[ERROR] Received invalid message from {addr}")
+                        continue
+
+                    # Handle "interested" message
+                    if data["type"] == "interested":
+                        if not self.download_queue.is_choked(peer_id):
+                            unchoke_msg = self.message_factory.unchoke()
+                            conn.sendall(unchoke_msg)
+                            print(f"Sent UNCHOKE to {addr}")
+
+                    # Handle "request" message for a piece
+                    elif data["type"] == "request":
+                        index, begin, length = data["index"], data["begin"], data["length"]
+                        if self.download_queue.add_request(peer_id, index, begin, length):
+                            piece_data = self.piece_manager_seed.get_piece(index)
+                            if piece_data:
+                                piece_msg = self.message_factory.piece(index, begin, piece_data)
+                                conn.sendall(piece_msg)
+                                self.download_queue.mark_completed(peer_id, index, begin)
+                                print(f"[INFO] Sent piece {index} to {addr}")
+
+                except socket.timeout:
+                    print(f"[WARNING] Timeout while waiting for data from {addr}")
+                    break
+                except ConnectionResetError:
+                    print(f"[INFO] Connection reset by peer {addr}")
+                    break
+                except Exception as e:
+                    print(f"[ERROR] Error with peer {addr}: {e}")
                     break
 
-                data = self.message_parser.parse_message(request)
-
-                if data["type"] == "interested":
-                    if not self.download_queue.is_choked(peer_id):
-                        unchoke_msg = self.message_factory.unchoke()
-                        conn.sendall(unchoke_msg)
-                        print(f"Sent UNCHOKE to {addr}")
-
-                elif data["type"] == "request":
-                    index, begin, length = data["index"], data["begin"], data["length"]
-                    if self.download_queue.add_request(peer_id, index, begin, length):
-                        piece_data = self.piece_manager_seed.get_piece(index)
-                        if piece_data:
-                            piece_msg = self.message_factory.piece(index, begin, piece_data)
-                            conn.sendall(piece_msg)
-                            self.download_queue.mark_completed(peer_id, index, begin)
-
-        except Exception as e:
-            print(f"Error with peer {addr}: {e}")
         finally:
             conn.close()
             self.download_queue.handle_disconnect(peer_id)
+            print(f"[INFO] Connection with {addr} closed")
 
-
+    def get_missing_pieces_from_peer(self, peer_bitfield):
+        """
+        Determine which pieces the peer has that we are missing.
+        
+        Args:
+            peer_bitfield (list[int]): The bitfield of the peer.
+        
+        Returns:
+            list[int]: List of piece indices that we are missing but the peer has.
+        """
+        missing_pieces = []
+        for index, bit in enumerate(peer_bitfield):
+            if bit == 1 and not self.piece_manager_seed.get_next_missing_piece(index):
+                missing_pieces.append(index)
+        return missing_pieces
 
 
 
@@ -174,42 +231,70 @@ class Peer:
             return b""
 
     def download_piece(self, peer_ip, peer_port):
+        """Download all pieces sequentially from a peer."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             try:
                 client_socket.connect((peer_ip, peer_port))
                 
+                # Step 1: Send handshake
                 handshake = self.message_factory.handshake(self.info_hash, self.peer_id.encode())
                 client_socket.sendall(handshake)
 
+                # Receive handshake response
                 response = client_socket.recv(1024)
                 data = self.message_parser.parse_message(response)
                 if data["type"] != "handshake":
                     return
 
+                # Step 2: Send INTERESTED message
                 interested_msg = self.message_factory.interested()
                 client_socket.sendall(interested_msg)
 
-                time.sleep(1)
-                response = client_socket.recv(1024)
-                data = self.message_parser.parse_message(response)
-                if data["type"] != "unchoke":
-                    return
-                missing_piece = self.piece_manager_leech.get_next_missing_piece()
-                print(f"Requesting piece {missing_piece} from {peer_ip}:{peer_port}")   
-                if missing_piece is not None:
+                # Step 3: Wait for UNCHOKE response
+                while True:
+                    response = client_socket.recv(1024)
+                    data = self.message_parser.parse_message(response)
+                    if data["type"] == "unchoke":
+                        break
+                    time.sleep(0.5)  # Sleep briefly to avoid busy-waiting
+
+                # Step 4: Download all missing pieces
+                while True:
+                    missing_piece = self.piece_manager_leech.get_next_missing_piece()
+                    
+                    # If no more missing pieces, break the loop
+                    if missing_piece is None:
+                        print("[INFO] All pieces have been downloaded.")
+                        break
+
+                    print(f"[DEBUG] Requesting piece {missing_piece} from {peer_ip}:{peer_port}")
+                    
+                    # Request the next missing piece
                     index, begin = missing_piece, 0
                     request_msg = self.message_factory.request(index, begin, 512 * 1024)
                     client_socket.sendall(request_msg)
 
-                    response = client_socket.recv(1024 + 512 * 1024)
-                    piece_data = self.message_parser.parse_message(response)
-                    if piece_data["type"] == "piece":
-                        self.piece_manager_leech.save_piece(piece_data['index'], piece_data['block'])
-                        self.download_queue.mark_completed(peer_ip, piece_data['index'], 0)
+                    # Step 5: Receive the requested piece
+                    try:
+                        response = client_socket.recv(1024 + 512 * 1024)
+                        if not response:
+                            print("[ERROR] No response received. Retrying...")
+                            continue
+
+                        piece_data = self.message_parser.parse_message(response)
+                        if piece_data["type"] == "piece":
+                            self.piece_manager_leech.save_piece(piece_data['index'], piece_data['block'])
+                            self.download_queue.mark_completed(peer_ip, piece_data['index'], 0)
+                            print(f"[INFO] Successfully downloaded piece {piece_data['index']}")
+
+                    except socket.timeout:
+                        print("[WARNING] Timeout while receiving piece. Retrying...")
+                        continue
 
             except Exception as e:
-                print(f"Error downloading from {peer_ip}:{peer_port}: {e}")
-
+                print(f"[ERROR] Error downloading from {peer_ip}:{peer_port}: {e}")
+            finally:
+                client_socket.close()
 
 
 

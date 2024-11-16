@@ -89,36 +89,35 @@ class PieceManager:
         try:
             start = index * self.piece_length
             piece_data = b""
+            remaining_length = self.piece_length
 
             # Iterate over the list of files
             for file_info in self.files:
                 file_path = file_info['path']
-                print(f"[INFO] Reading piece {index} from {file_path}")
                 file_size = file_info['length']
 
-                # Check if the current file exists and contains the start position
-                if not os.path.exists(file_path):
-                    print(f"[INFO] File not found: {file_path}. Piece {index} is not available yet.")
-                    return None
-
+                # Check if the piece starts in this file
                 if start >= file_size:
                     start -= file_size
                     continue
 
-                # Open the file and seek to the correct position
+                # Open the file and seek to the starting position
                 with open(file_path, "rb") as file:
                     file.seek(start)
-                    remaining_length = self.piece_length - len(piece_data)
-                    piece_data += file.read(remaining_length)
                     
-                    # Break if we've read the entire piece
-                    if len(piece_data) >= self.piece_length:
+                    # Calculate how much data to read from this file
+                    read_size = min(remaining_length, file_size - start)
+                    piece_data += file.read(read_size)
+
+                    # Update the remaining length and reset start for the next file
+                    remaining_length -= read_size
+                    start = 0  # Reset start for subsequent files
+
+                    # If we have read the entire piece, exit the loop
+                    if remaining_length <= 0:
                         break
 
-                # Reset the start to 0 for subsequent files
-                start = 0
-
-            return piece_data if len(piece_data) > 0 else None
+            return piece_data if len(piece_data) == self.piece_length else None
 
         except Exception as e:
             print(f"[ERROR] Error reading piece {index}: {e}")
@@ -127,7 +126,7 @@ class PieceManager:
 
     def save_piece(self, index, data):
         """
-        Save a downloaded piece to the appropriate file, creating files if necessary.
+        Save a downloaded piece to the appropriate file(s), creating files if necessary.
         
         Args:
             index (int): The index of the piece.
@@ -135,17 +134,22 @@ class PieceManager:
         """
         start = index * self.piece_length
         offset = 0
+        remaining_length = len(data)
 
+        # Iterate over the list of files to save the piece data
         for file_info in self.files:
             file_path = file_info['path']
             file_size = file_info['length']
 
+            # Ensure the directory exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
             # Create the file if it does not exist
             if not os.path.exists(file_path):
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
                 with open(file_path, "wb") as f:
                     f.truncate(file_size)  # Pre-allocate the file size
 
+            # If the piece starts beyond the current file, adjust the start position
             if start >= file_size:
                 start -= file_size
                 continue
@@ -153,11 +157,20 @@ class PieceManager:
             # Open the file in read-write mode and write the data
             with open(file_path, "r+b") as file:
                 file.seek(start)
-                write_size = min(len(data) - offset, file_size - start)
+                
+                # Calculate how much data to write to the current file
+                write_size = min(remaining_length, file_size - start)
+                
+                # Write the portion of the piece to the file
                 file.write(data[offset:offset + write_size])
                 offset += write_size
+                remaining_length -= write_size
 
-                if offset >= len(data):
+                # Reset start for subsequent files
+                start = 0
+
+                # If all data has been written, break out of the loop
+                if remaining_length <= 0:
                     break
 
         # Mark the piece as completed after saving
@@ -178,6 +191,7 @@ class PieceManager:
         for i in range(self.total_pieces):
             if self.bitfield[i] == 0:
                 return i
+        print(f"[INFO] All pieces have been downloaded!!!!!!!!!!!!!!!")
         return None
 
     def get_bitfield(self):
