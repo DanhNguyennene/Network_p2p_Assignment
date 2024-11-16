@@ -3,17 +3,16 @@ from lib import *
 
 class Torrent:
     def __init__(self):
-        self.torrent_files = []
+        self.torrent_file = ""
+        self.tracker_url = ""
+        self.name = ""
         self.pieces = []
-        self.piece_length: int = 0
-        self.name: str = ""
-        self.tracker_url: str = ""
         self.files = []
-        self.info = {}
+        self.piece_length = 0
 
     def load_torrent(self, torrent_file):
         """Load metadata from the .torrent file."""
-        self.torrent_files.append(torrent_file)
+        self.torrent_file = torrent_file
 
         try:
             with open(torrent_file, "rb") as f:
@@ -44,12 +43,6 @@ class Torrent:
                 print(f"[ERROR] Missing 'name' key in torrent data: {e}")
                 self.name = ""
 
-            try:
-                self.info = torrent_data[b"info"]
-            except KeyError as e:
-                print(f"[ERROR] Missing 'info' key in torrent data: {e}")
-                self.info = {}
-
             # Iterate through files information
             try:
                 for file in torrent_data[b"info"][b"files"]:
@@ -70,8 +63,47 @@ class Torrent:
         except Exception as e:
             print(f"[ERROR] An unexpected error occurred: {e}")
 
-    def get_info_hash(self):
-        bencoded_info = bencodepy.encode(self.info)
-        info_hash = hashlib.sha1(bencoded_info).digest()
+    @property
+    def info_hash(self):
+        try:
+            with open(self.torrent_file, "rb") as f:
+                torrent_data = f.read()
 
-        return info_hash
+            start = torrent_data.find(b"4:infod") + len("4:infod") - 1
+            end = -1
+
+            return hashlib.sha1(torrent_data[start:end]).digest()
+
+        except FileNotFoundError as e:
+            print(f"[ERROR] The file {self.torrent_file} was not found: {e}")
+            torrent_data = {}
+        except Exception as e:
+            print(f"[ERROR] An unexpected error occurred: {e}")
+
+    @property
+    def info(self):
+        try:
+            with open(self.torrent_file, "rb") as f:
+                torrent_data = bencodepy.decode(f.read())
+
+            try:
+                info = torrent_data[b"info"]
+            except KeyError as e:
+                print(f"[ERROR] Missing 'info' key in torrent data: {e}")
+                info = {}
+
+            start = 0
+            end = 0
+            for file in info[b"files"]:
+                size = math.ceil(file[b"length"] / self.piece_length)
+                end += size
+                file["pieces_index"] = list(range(start, end))
+                start = end
+
+            return info
+
+        except FileNotFoundError as e:
+            print(f"[ERROR] The file {self.torrent_file} was not found: {e}")
+            torrent_data = {}
+        except Exception as e:
+            print(f"[ERROR] An unexpected error occurred: {e}")

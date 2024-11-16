@@ -1,76 +1,69 @@
 from lib import *
 from torrent import *
+from message import *
 
 
-class PeerNode:
+class Peer:
     def __init__(
         self,
         torrent,
-        peer_id,
+        client_id,
         ip,
         port,
         is_seeder=False,
     ):
-        self.peer_id = peer_id
+        self.peer_id = self._create_peer_id(client_id)
         self.ip = ip
         self.port = port
         self.is_seeder = is_seeder
         self.server_socket = None
-        self.executor = ThreadPoolExecutor(max_workers=10)
-        self.shutdown_event = threading.Event()
+
         self.downloaded = 0
         self.uploaded = 0
 
-        self.torrent = torrent
+        self.am_choking = 1
+        self.am_interested = 0
+        self.peer_choking = 1
+        self.peer_interested = 0
+
+        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.shutdown_event = threading.Event()
+
         self.tracker_url = torrent.tracker_url
         self.name = torrent.name
-        self.file_hash = torrent.get_info_hash()
+        self.piece_length = torrent.piece_length
+        self.info_hash = torrent.info_hash
+        self.info = torrent.info
 
-        # Initialize pieces tracking for multiple files
-        self.pieces_downloaded = {
-            file["path"]: [False] * file["num_pieces"] for file in self.files
-        }
+        self.message_factory = MessageFactory()
+        self.message_parser = MessageParser()
 
         os.makedirs("downloads", exist_ok=True)
         os.makedirs("shared", exist_ok=True)
 
-    def create_file_or_directory(self, file_info):
-        """Create a file or directory based on the metadata from the .torrent file."""
-        try:
-            decoded_path = [part.decode() for part in file_info[b"path"]]
-            file_path = os.path.join(self.destination_dir_name, *decoded_path)
-            file_size = file_info[b"length"]
+    def _create_peer_id(self, client_id, version_number="1000"):
+        if (
+            len(client_id) != 2
+            or not any(c.isdigit() for c in client_id)
+            or not any(c.isalpha() for c in client_id)
+        ):
+            raise ValueError("Client ID containing 2 letters or numbers")
+        if len(version_number) != 4 or not version_number.isdigit():
+            raise ValueError("Version number must be exactly four digits")
 
-            # Check if it's a directory or a file
-            if file_path.endswith(os.sep):
-                os.makedirs(file_path, exist_ok=True)
-                print(f"[DEBUG] Created directory: {file_path}")
-            else:
-                # Ensure the parent directory exists
-                os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        random_part = "".join(random.choices(string.digits, k=8))
 
-                # Create an empty file if it doesn't exist
-                if not os.path.isfile(file_path):
-                    with open(file_path, "wb") as f:
-                        f.truncate(file_size)
-                    print(f"[DEBUG] Created file: {file_path} with size {file_size}")
+        peer_id = f"-{client_id.upper()}{version_number}-{random_part}-"
 
-                # Check the file size
-                actual_size = os.path.getsize(file_path)
-                if actual_size != file_size:
-                    print(
-                        f"[WARNING] File {file_path} has size {actual_size}, expected {file_size}"
-                    )
-        except Exception as e:
-            print(f"[ERROR] Error creating file or directory: {e}")
+        return peer_id
 
     def register_with_tracker(self):
         """Register with the tracker and get a list of peers."""
         data = {
+            "info_hash": self.info_hash,
             "peer_id": self.peer_id,
             "ip": self.ip,
             "port": self.port,
-            "file_hash": self.file_hash,
             "downloaded": self.downloaded,
             "uploaded": self.uploaded,
             "is_seeder": self.is_seeder,
@@ -85,7 +78,7 @@ class PeerNode:
     def get_peers(self):
         """Get the list of peers from the tracker"""
         data = {
-            "file_hash" = self.file_hash
+            "info_hash": self.info_hash,
         }
         try:
             response = requests.get(self.tracker_url + "get_peers", json=data)
@@ -115,20 +108,17 @@ class PeerNode:
 
     def handle_client(self, conn, addr):
         """Handles requests for specific pieces from other peers."""
-        try:
-            request = conn.recv(1024).decode()
-            if request.startswith("REQUEST_PIECE"):
-                file_path, piece_index = request.split("\$")[1], int(
-                    request.split("\$")[2]
-                )
-                piece_data = self.get_piece(file_path, piece_index)
-                conn.sendall(piece_data)
-                self.update_upload_stats(len(piece_data))
-                print(f"Uploaded piece {piece_index} of {file_path} to {addr}")
-        except Exception as e:
-            print(f"Error handling client {addr}: {e}")
-        finally:
-            conn.close()
+        request = conn.recv(1024)
+
+        data = self.message_parser.parse_message(request)
+        response = self.message_factory.handshake(
+            self.info_hash, self.peer_id.encode("utf-8")
+        )
+        conn.sendall(response)
+        # elif type == "message":
+        # data = self.message_parser.parse_message(request)
+
+        return data
 
     def get_piece(self, file_path, index):
         """Retrieve a piece by index for a specific file."""
@@ -145,41 +135,24 @@ class PeerNode:
             print(f"[ERROR] Error reading piece {index} from {file_path}: {e}")
             return b""
 
-    def download_piece(self, file_name, piece_index, peer_ip, peer_port):
+    def download_piece(self, peer_ip, peer_port):
         """Download a specific piece from a peer."""
-        try:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                s.connect((peer_ip, peer_port))
-                s.sendall(
-                    f"REQUEST_PIECE\${os.path.join(self.origin_dir_name, file_name)}\${piece_index}".encode()
-                )
-                print(
-                    f"Requested piece {piece_index} of {self.origin_dir_name} {file_path} from {peer_ip}:{peer_port}"
-                )
-                # Download the full piece in chunks
-                piece_data = b""
-                while len(piece_data) < self.piece_length:
-                    chunk = s.recv(4096)
-                    # print(chunk)
-                    if not chunk:
-                        break
-                    piece_data += chunk
-                print(len(piece_data))
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
+            client_socket.connect((peer_ip, peer_port))
 
-                if len(piece_data) == self.piece_length:
-                    self.save_piece(
-                        os.path.join(self.destination_dir_name, file_path),
-                        piece_index,
-                        piece_data,
-                    )
-                    self.update_download_stats(len(piece_data))
-                    print(
-                        f"Downloaded piece {piece_index} of {file_path} from {peer_ip}:{peer_port}"
-                    )
-        except Exception as e:
-            print(
-                f"Error downloading piece {piece_index} of {file_path} from {peer_ip}:{peer_port}: {e}"
+            # Handshaking
+            handshake = self.message_factory.handshake(
+                self.info_hash, self.peer_id.encode("utf-8")
             )
+            client_socket.sendall(handshake)
+            response = client_socket.recv(1024)
+
+            # Sending HAVE message
+            have = self.message_factory.have(piece_index=1)
+
+            # Sending CHOKE/UNCHOKE INTERESTED/NOT INTERESTED
+            self.am_interested = 1
+            client_socket.sendall(self.am_interested)
 
     def save_piece(self, file_path, index, data):
         """Save a piece to the file."""

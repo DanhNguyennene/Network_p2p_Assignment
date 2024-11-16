@@ -2,48 +2,68 @@ from lib import *
 
 
 class Tracker:
-    def __init__(self, torrent, tracker_id, ip, port):
-        self.torrent = torrent
+    def __init__(self, tracker_id, ip, port):
         self.tracker_id = tracker_id
         self.ip = ip
         self.port = port
         self.peers = {}  # Dictionary to store peer information
 
+    def _update_peers(self, data):
+        peer_id = data.get("peer_id")
+        ip = data.get("ip")
+        port = data.get("port")
+        info_hash = data.get("info_hash")
+        downloaded = data.get("downloaded", 0)
+        uploaded = data.get("uploaded", 0)
+        is_seeder = data.get("is_seeder", False)
+
+        if info_hash:
+            if info_hash not in self.peers:
+                self.peers[info_hash] = {}
+
+            self.peers[info_hash][peer_id] = {
+                "peer_id": peer_id,
+                "ip": ip,
+                "port": port,
+                # "pieces": pieces,
+                "downloaded": downloaded,
+                "uploaded": uploaded,
+                "is_seeder": is_seeder,
+            }
+
+            return True
+        return False
+
+    def _get_peers(self, data):
+        return self.peers[data.get("info_hash")]
+
     def register_routes(self):
         """Register Flask routes within the class context."""
         app = Flask(__name__)
 
-        @app.route("/announce", methods=["POST"])
+        @app.route("/announce", methods=["GET"])
         def announce():
             """
             Endpoint for peers to register themselves and their files.
             """
-            data = request.get_json()
+            income_data = request.get_json()
+            updated = self._update_peers(income_data)
+            peers = self._get_peers(income_data)
 
-            peer_id = data.get("peer_id")
-            ip = data.get("ip")
-            port = data.get("port")
-            info_hash = data.get("info_hash")
-            downloaded = data.get("downloaded", 0)
-            uploaded = data.get("uploaded", 0)
-            is_seeder = data.get("is_seeder", False)
-
-            if info_hash:
-                if info_hash not in self.peers:
-                    self.peers[info_hash] = {}
-
-                self.peers[info_hash][peer_id] = {
-                    "ip": ip,
-                    "port": port,
-                    # "pieces": pieces,
-                    "downloaded": downloaded,
-                    "uploaded": uploaded,
-                    "is_seeder": is_seeder,
+            if updated:
+                response_data = {
+                    "interval": 2,
+                    "tracker_id": self.tracker_id,
+                    "complete": 0,
+                    "incomplete": 0,
+                    "peers": peers,
                 }
-                print(f"Registered peer {peer_id} for file {info_hash}")
-                return jsonify({"status": "registered"}), 200
+            else:
+                response_data = {
+                    "failure_reason": updated,
+                }
 
-            return jsonify({"error": "Invalid data"}), 400
+            return jsonify(response_data), 200
 
         @app.route("/get_peers", methods=["GET"])
         def get_peers():
@@ -82,5 +102,5 @@ if __name__ == "__main__":
     tracker_id = "tracker001"
 
     # Create a TrackerNode instance
-    tracker = TrackerNode(tracker_id, ip, port)
+    tracker = Tracker(tracker_id, ip, port)
     tracker.run()
