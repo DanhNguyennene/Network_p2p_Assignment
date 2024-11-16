@@ -4,6 +4,7 @@ from lib import *
 class Torrent:
     def __init__(self):
         self.torrent_file = ""
+        self.json_torrent = {}
         self.tracker_url = ""
         self.name = ""
         self.pieces = []
@@ -18,13 +19,13 @@ class Torrent:
             with open(torrent_file, "rb") as f:
                 torrent_data = bencodepy.decode(f.read())
 
+            self.json_torrent = torrent_data
             # Attempt to load essential torrent data
             try:
                 self.tracker_url = torrent_data[b"announce"].decode()
             except KeyError as e:
                 print(f"[ERROR] Missing 'announce' key in torrent data: {e}")
                 self.tracker_url = ""
-
             try:
                 self.piece_length = torrent_data[b"info"][b"piece_length"]
             except KeyError as e:

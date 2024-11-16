@@ -1,15 +1,23 @@
 from lib import *
 
-
 def get_files_in_directory(directory):
     """Recursively gets all files in the directory."""
-    root_parent = Path(os.path.abspath(directory)).parent
+    # Convert the directory path to an absolute path and normalize it
+    directory = os.path.abspath(directory)
+    directory = os.path.normpath(directory)
+    
     file_list = []
+
+    # Walk through the directory and gather all files
     for cur_dir, _, files in os.walk(directory):
+        cur_dir = os.path.normpath(cur_dir)
         for file in files:
-            full_path = os.path.join(root_parent, cur_dir, file)
-            relative_path = os.path.join(cur_dir, file)
+            full_path = os.path.normpath(os.path.join(cur_dir, file))
+            relative_path = os.path.relpath(full_path, directory)
+            
+            # Append the relative path and the full path to the file_list
             file_list.append((relative_path, full_path))
+    
     return file_list
 
 
@@ -70,7 +78,7 @@ def split_file(file_path, piece_size=512 * 1024):
 def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024):
     """Generates a .torrent file for the specified directory."""
     file_paths = get_files_in_directory(directory)
-
+    print(f"[DEBUG] Found {file_paths} files in directory: {directory}")
     pieces = []
     files = []
 
@@ -94,7 +102,7 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
         "info": {
             "piece_length": piece_size,
             "pieces": b"".join(pieces),
-            "name": directory,
+            "name": os.path.basename(os.path.normpath(directory)),
             "files": files,
         },
     }

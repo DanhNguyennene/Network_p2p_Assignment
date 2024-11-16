@@ -1,11 +1,15 @@
 from lib import *
 from utils import *
-from peer import PeerNode
+from peer import Peer
 from torrent import Torrent
 
+TRACKER_URL ="http://127.0.0.1:8000/"
 
 def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
-    generate_torrent("shared", "/", "torrents")
+
+    os.makedirs("downloads", exist_ok=True)
+    os.makedirs(os.path.join("TO_BE_SHARED","shared"), exist_ok=True)
+    generate_torrent(os.path.join("TO_BE_SHARED","shared"), TRACKER_URL, "torrents")
     peers = []
     seeder_ports = [6881]
     leecher_ports = [6882, 6883, 6884]
@@ -18,7 +22,7 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
         seeder_id = f"A{i+1}"
         seeder_ip = "127.0.0.1"
         seeder_port = seeder_ports[i]
-        seeder = PeerNode(torrent, seeder_id, seeder_ip, seeder_port, is_seeder=True)
+        seeder = Peer(torrent, seeder_id, seeder_ip, seeder_port, is_seeder=True)
         seeder.register_with_tracker()
         peers.append(seeder)
 
@@ -33,7 +37,7 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
         leecher_id = f"A{i+1}"
         leecher_ip = "127.0.0.1"
         leecher_port = leecher_ports[i]
-        leecher = PeerNode(
+        leecher = Peer(
             torrent, leecher_id, leecher_ip, leecher_port, is_seeder=False
         )
         leecher.register_with_tracker()
