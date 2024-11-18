@@ -50,7 +50,7 @@ class Torrent:
                     self.files.append(
                         {
                             "length": file[b"length"],
-                            "path": [element.decode() for element in file[b"path"]],
+                            "path": file[b"path"].decode(),
                         }
                     )
             except KeyError as e:

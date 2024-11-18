@@ -92,7 +92,7 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
         files.append(
             {
                 "length": file_length,
-                "path": split_path(relative_path),
+                "path": relative_path,
             }
         )
 #  -------------------   
