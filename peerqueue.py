@@ -1,42 +1,58 @@
 from threading import Lock
 
 class DownloadQueue:
-    def __init__(self, total_pieces, capacity=40):
+    def __init__(self, total_pieces, capacity=4):
         """
         Initialize the DownloadQueue with bitfield management and choking capacity.
+        
         Args:
             total_pieces (int): Total number of pieces in the torrent.
-            capacity (int): The maximum number of outstanding requests per peer.
+            capacity (int): The maximum number of peers that can be unchoked simultaneously.
         """
         self.total_pieces = total_pieces
         self.capacity = capacity
-        self.requests = {}  # Format: {(index, begin): peer_id}
-        self.completed_blocks = set()
-        self.peer_requests = {}  # {peer_id: list of (index, begin)}
-        self.choked_peers = set()
-        self.bitfield = [0] * total_pieces
+        self.requests = {}  # {(index, begin): peer_id}
+        self.completed_blocks = set()  # Set of (index, begin)
+        self.peer_requests = {}  # {peer_id: [(index, begin)]}
+        self.bitfield = [0] * total_pieces  # Client's bitfield
+        self.choked_peers = set()  # Set of choked peer_ids
+        self.unchoked_peers = set()  # Set of unchoked peer_ids
+        self.interested_peers = set()  # Set of interested peer_ids
         self.lock = Lock()
 
-    def add_request(self, peer_id, index, begin, length):
-        """Add a block request to the queue if the piece is missing."""
+    def add_interested_peer(self, peer_id):
+        """Mark a peer as interested."""
         with self.lock:
-            if self.is_choked(peer_id):
-                return False
+            self.interested_peers.add(peer_id)
 
+    def remove_interested_peer(self, peer_id):
+        """Remove a peer from the interested list."""
+        with self.lock:
+            self.interested_peers.discard(peer_id)
+    def is_choked(self, peer_id):   
+        """Check if a peer is choked."""
+        return peer_id in self.choked_peers
+        
+    def add_request(self, peer_id, index, begin, length):
+        """Add a block request to the queue if it's not already requested or completed."""
+        with self.lock:
             key = (index, begin)
-            if self.bitfield[index] == 1 or key in self.requests or key in self.completed_blocks:
+
+            if self.is_choked(peer_id):
+                print(f"[INFO] Peer {peer_id} is choked. Cannot add request.")
                 return False
 
+            if key in self.requests or key in self.completed_blocks:
+                print(f"[INFO] Block {key} is already requested or completed.")
+                return False
+
+            # Add the request to the queue
             self.requests[key] = peer_id
             if peer_id not in self.peer_requests:
                 self.peer_requests[peer_id] = []
             self.peer_requests[peer_id].append(key)
 
-            # Choke the peer if it exceeds the capacity
-            if len(self.peer_requests[peer_id]) > self.capacity:
-                self.choked_peers.add(peer_id)
-                print(f"[INFO] Choked peer {peer_id} due to capacity limit")
-
+            print(f"[INFO] Added request for block {key} from peer {peer_id}")
             return True
 
     def mark_completed(self, peer_id, index, begin):
@@ -46,24 +62,81 @@ class DownloadQueue:
             if key in self.requests and self.requests[key] == peer_id:
                 del self.requests[key]
                 self.completed_blocks.add(key)
-                self.bitfield[index] = 1
                 if peer_id in self.peer_requests:
                     self.peer_requests[peer_id].remove(key)
-                    if len(self.peer_requests[peer_id]) <= self.capacity:
-                        self.choked_peers.discard(peer_id)
 
-    def is_choked(self, peer_id):
-        """Check if a peer is currently choked."""
-        return peer_id in self.choked_peers
+                # Mark the piece as completed in the bitfield
+                self.bitfield[index] = 1
+                print(f"[INFO] Block {key} marked as completed by peer {peer_id}")
+
+    def choke_peer(self, peer_id):
+        """Choke a peer."""
+        with self.lock:
+            self.choked_peers.add(peer_id)
+            self.unchoked_peers.discard(peer_id)
+            print(f"[INFO] Choked peer {peer_id}")
+
+    def unchoke_peer(self, peer_id):
+        """Unchoke a peer if within capacity."""
+        with self.lock:
+            if len(self.unchoked_peers) < self.capacity:
+                self.choked_peers.discard(peer_id)
+                self.unchoked_peers.add(peer_id)
+                print(f"[INFO] Unchoked peer {peer_id}")
+                return True
+            print(f"[INFO] Cannot unchoke peer {peer_id}, capacity reached.")
+            return False
+
+    def cancel_request(self, peer_id, index, begin):
+        """Cancel a block request."""
+        with self.lock:
+            key = (index, begin)
+            if key in self.requests and self.requests[key] == peer_id:
+                del self.requests[key]
+                if peer_id in self.peer_requests:
+                    self.peer_requests[peer_id].remove(key)
+                print(f"[INFO] Cancelled request for block {key} from peer {peer_id}")
+
+    def update_bitfield(self, peer_id, bitfield):
+        """Update the bitfield for a peer."""
+        with self.lock:
+            for index, bit in enumerate(bitfield):
+                if bit == 1 and self.bitfield[index] == 0:
+                    self.bitfield[index] = 1
+                    print(f"[INFO] Marked piece {index} as available based on peer {peer_id}'s bitfield")
+
+    def get_next_request(self):
+        """Get the next missing piece to request."""
+        with self.lock:
+            for index, bit in enumerate(self.bitfield):
+                if bit == 0:  # If the piece is missing
+                    return index
+            return None
 
     def handle_disconnect(self, peer_id):
-        """Handle recovery when a peer disconnects."""
+        """Handle a peer disconnection."""
         with self.lock:
-            reassigned_blocks = []
             if peer_id in self.peer_requests:
                 for key in self.peer_requests[peer_id]:
-                    del self.requests[key]
-                    reassigned_blocks.append(key)
+                    if key in self.requests:
+                        del self.requests[key]
                 del self.peer_requests[peer_id]
                 self.choked_peers.discard(peer_id)
-            return reassigned_blocks
+                self.unchoked_peers.discard(peer_id)
+                self.interested_peers.discard(peer_id)
+            print(f"[INFO] Disconnected peer {peer_id}")
+
+    def manage_unchoking(self):
+        """Dynamically unchoke interested peers based on capacity."""
+        with self.lock:
+            for peer_id in self.interested_peers:
+                if peer_id not in self.unchoked_peers:
+                    if self.unchoke_peer(peer_id):
+                        print(f"[INFO] Unchoked interested peer {peer_id}")
+
+            # Choke excess peers if we are over capacity
+            if len(self.unchoked_peers) > self.capacity:
+                extra_peers = list(self.unchoked_peers)[self.capacity:]
+                for peer_id in extra_peers:
+                    self.choke_peer(peer_id)
+                    print(f"[INFO] Choked peer {peer_id} due to capacity limit")

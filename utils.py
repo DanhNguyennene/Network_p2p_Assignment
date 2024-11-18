@@ -45,7 +45,7 @@ def split_file(file_path, piece_size=512 * 1024):
 
     if file_size < piece_size:
         with open(file_path, "rb") as f:
-            piece = f.read()
+            piece = f.read() 
             hash_piece = hashlib.sha1(piece).digest()
             pieces += hash_piece
 
@@ -95,8 +95,8 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
                 "path": split_path(relative_path),
             }
         )
-
-        # Create the torrent metadata
+#  -------------------   
+    # Create the torrent metadata
     torrent_info = {
         "announce": tracker_url,
         "info": {

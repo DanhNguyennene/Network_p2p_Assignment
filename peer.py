@@ -44,6 +44,7 @@ class Peer:
         self.info_hash = torrent.info_hash
         self.info = torrent.info
 
+
         self.message_factory = MessageFactory()
         self.message_parser = MessageParser()
 
@@ -118,7 +119,7 @@ class Peer:
     def handle_client(self, conn, addr):
         peer_id = addr
         print(f"Accepted connection from {addr}")
-        
+
         try:
             # Step 1: Receive handshake and send response
             request = conn.recv(1024)
@@ -126,37 +127,22 @@ class Peer:
             if data is None or data["type"] != "handshake":
                 print(f"[ERROR] Invalid handshake from {addr}")
                 return
-            
+
             # Send handshake response
             response = self.message_factory.handshake(self.info_hash, self.peer_id.encode())
             conn.sendall(response)
             print(f"[INFO] Handshake with {addr} completed")
 
-            # Step 2: Request bitfield from the peer
-            bitfield_request = self.message_factory.bitfield()
-            conn.sendall(bitfield_request)
-            print(f"[INFO] Sent bitfield request to {addr}")
+            # Step 2: Initialize bitfield if received
+            peer_bitfield = None
 
-            # Step 3: Receive the bitfield from the peer
-            conn.settimeout(10.0)
-            bitfield_response = conn.recv(1024)
-            bitfield_data = self.message_parser.parse_message(bitfield_response)
-
-            if bitfield_data is None or bitfield_data["type"] != "bitfield":
-                print(f"[ERROR] Failed to receive a valid bitfield from {addr}")
-                return
-
-            peer_bitfield = bitfield_data["bitfield"]
-            print(f"[INFO] Received bitfield from {addr}: {peer_bitfield}")
-
-            # Step 4: Filter missing pieces using the peer's bitfield
-            missing_pieces = self.get_missing_pieces_from_peer(peer_bitfield)
-
-            # Step 5: Handle messages from the peer
-            for _ in len(missing_pieces):
+            # Step 3: Handle messages from the peer
+            while True:
                 try:
-                    conn.settimeout(10.0)
+                    conn.settimeout(10.0)  # Set a timeout for receiving data
                     request = conn.recv(1024)
+
+                    # Handle connection closure
                     if not request:
                         print(f"[INFO] Connection closed by peer {addr}")
                         break
@@ -166,12 +152,38 @@ class Peer:
                         print(f"[ERROR] Received invalid message from {addr}")
                         continue
 
+                    # Handle "keep-alive" message
+                    if data["type"] == "keep-alive":
+                        print(f"[DEBUG] Received keep-alive from {addr}")
+                        continue
+
+                    # Handle "handshake" message
+                    if data["type"] == "handshake":
+                        print(f"[INFO] Received handshake from {addr}")
+                        continue
+
+                    # Handle "bitfield" message
+                    if data["type"] == "bitfield":
+                        peer_bitfield = data["bitfield"]
+                        print(f"[INFO] Received bitfield from {addr}")
+                        self.download_queue.update_bitfield(peer_id, peer_bitfield)
+                        continue
+
                     # Handle "interested" message
                     if data["type"] == "interested":
-                        if not self.download_queue.is_choked(peer_id):
+                        self.download_queue.add_interested_peer(peer_id)
+                        if self.download_queue.unchoke_peer(peer_id):
+                            print(f"[INFO] Unchoking peer {addr}")
                             unchoke_msg = self.message_factory.unchoke()
                             conn.sendall(unchoke_msg)
-                            print(f"Sent UNCHOKE to {addr}")
+                        else:
+                            print(f"[INFO] Capacity reached. Unable to unchoke {addr}")
+
+                    # Handle "uninterested" message
+                    elif data["type"] == "uninterested":
+                        self.download_queue.remove_interested_peer(peer_id)
+                        self.download_queue.choke_peer(peer_id)
+                        print(f"[INFO] Choking peer {addr}")
 
                     # Handle "request" message for a piece
                     elif data["type"] == "request":
@@ -183,6 +195,32 @@ class Peer:
                                 conn.sendall(piece_msg)
                                 self.download_queue.mark_completed(peer_id, index, begin)
                                 print(f"[INFO] Sent piece {index} to {addr}")
+
+                    # Handle "piece" message
+                    elif data["type"] == "piece":
+                        index, begin, block = data["index"], data["begin"], data["block"]
+                        self.piece_manager_seed.save_piece(index, block)
+                        self.download_queue.mark_completed(peer_id, index, begin)
+                        print(f"[INFO] Received block {begin} from {addr}")
+
+                    # Handle "choke" message
+                    elif data["type"] == "choke":
+                        self.download_queue.choke_peer(peer_id)
+                        print(f"[INFO] Peer {addr} choked us")
+
+                    # Handle "unchoke" message
+                    elif data["type"] == "unchoke":
+                        self.download_queue.unchoked_peers.add(peer_id)
+                        print(f"[INFO] Peer {addr} unchoked us")
+
+                    # Handle "cancel" message
+                    elif data["type"] == "cancel":
+                        index, begin, length = data["index"], data["begin"], data["length"]
+                        self.download_queue.cancel_request(peer_id, index, begin)
+                        print(f"[INFO] Cancelled request for block {begin} from {addr}")
+
+                    else:
+                        print(f"[WARNING] Unknown message type from {addr}")
 
                 except socket.timeout:
                     print(f"[WARNING] Timeout while waiting for data from {addr}")
@@ -198,6 +236,8 @@ class Peer:
             conn.close()
             self.download_queue.handle_disconnect(peer_id)
             print(f"[INFO] Connection with {addr} closed")
+
+
 
     def get_missing_pieces_from_peer(self, peer_bitfield):
         """
@@ -246,13 +286,19 @@ class Peer:
                 if data["type"] != "handshake":
                     return
 
+                bitfield_msg = self.message_factory.bitfield(self.piece_manager_leech.get_bitfield())
+                client_socket.sendall(bitfield_msg)
+
+                time.sleep(0.5)  # Sleep briefly to avoid busy-waiting
                 # Step 2: Send INTERESTED message
                 interested_msg = self.message_factory.interested()
                 client_socket.sendall(interested_msg)
-
+                 
+                
                 # Step 3: Wait for UNCHOKE response
                 while True:
                     response = client_socket.recv(1024)
+                    print("[DEBUG] Waiting for UNCHOKE message...")
                     data = self.message_parser.parse_message(response)
                     if data["type"] == "unchoke":
                         break
@@ -260,6 +306,7 @@ class Peer:
 
                 # Step 4: Download all missing pieces
                 while True:
+                    print("[DEBUG] Requesting next missing piece...")
                     missing_piece = self.piece_manager_leech.get_next_missing_piece()
                     
                     # If no more missing pieces, break the loop

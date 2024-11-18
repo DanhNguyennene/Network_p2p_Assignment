@@ -52,6 +52,10 @@ class MessageFactory:
         )  # Length prefix of 5, ID of 4, piece index
 
     @staticmethod
+    def request_bitfield():
+        """Bitfield message: <len=0001+X><id=5><bitfield>"""
+        return struct.pack("!IB", 1, 5)
+    @staticmethod
     def bitfield(bitfield):
         """Bitfield message: <len=0001+X><id=5><bitfield>"""
         bitfield_length = len(bitfield)
