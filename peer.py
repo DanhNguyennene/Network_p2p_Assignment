@@ -12,6 +12,8 @@ class Peer:
         ip,
         port,
         is_seeder=False,
+        shared_dir="./TO_BE_SHARED",
+        downloaded_dir="./downloads",
     ):
         self.peer_id = self._create_peer_id(client_id)
         self.ip = ip
@@ -22,8 +24,8 @@ class Peer:
         self.downloaded = 0
         self.uploaded = 0
 
-        self.shared_dir = "./TO_BE_SHARED"
-        self.downloaded_dir = "./downloads"
+        self.shared_dir = shared_dir
+        self.downloaded_dir = downloaded_dir
         print("INITIALIZING PIECE MANAGER FOR SEED")
         self.piece_manager_seed = PieceManager(torrent,self.shared_dir)
         print("INITIALIZING PIECE MANAGER FOR LEECH")
@@ -80,7 +82,7 @@ class Peer:
         try:
             print(f"[DEBUG] Registering with tracker: {self.tracker_url + "announce"}")  
             response = requests.post(self.tracker_url + "announce", json=data)
-            return response.json()
+            return response
         except requests.RequestException as e:
             print(f"[ERROR] registering with tracker: {e}")
             return []
@@ -139,7 +141,6 @@ class Peer:
             # Step 3: Handle messages from the peer
             while True:
                 try:
-                    conn.settimeout(10.0)  # Set a timeout for receiving data
                     request = conn.recv(1024)
 
                     # Handle connection closure
@@ -165,6 +166,7 @@ class Peer:
                     # Handle "bitfield" message
                     if data["type"] == "bitfield":
                         peer_bitfield = data["bitfield"]
+                        peer_bitfield = self.message_factory.bitfield(peer_bitfield)
                         print(f"[INFO] Received bitfield from {addr}")
                         self.download_queue.update_bitfield(peer_id, peer_bitfield)
                         continue

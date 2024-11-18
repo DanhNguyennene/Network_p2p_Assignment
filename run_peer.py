@@ -5,7 +5,7 @@ from torrent import Torrent
 
 TRACKER_URL ="http://127.0.0.1:8000/"
 
-def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
+def run_seeders_and_leechers(num_seeders=1, num_leechers=2):
 
     os.makedirs("downloads", exist_ok=True)
     os.makedirs(os.path.join("TO_BE_SHARED","shared"), exist_ok=True)
@@ -22,7 +22,7 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
         seeder_id = f"A{i+1}"
         seeder_ip = "127.0.0.1"
         seeder_port = seeder_ports[i]
-        seeder = Peer(torrent, seeder_id, seeder_ip, seeder_port, is_seeder=True)
+        seeder = Peer(torrent, seeder_id, seeder_ip, seeder_port, is_seeder=True,shared_dir="TO_BE_SHARED")
         seeder.register_with_tracker()
         peers.append(seeder)
 
@@ -38,7 +38,7 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=1):
         leecher_ip = "127.0.0.1"
         leecher_port = leecher_ports[i]
         leecher = Peer(
-            torrent, leecher_id, leecher_ip, leecher_port, is_seeder=False
+            torrent, leecher_id, leecher_ip, leecher_port, is_seeder=False,downloaded_dir=f"downloads_{leecher_port}"
         )
         leecher.register_with_tracker()
         peers.append(leecher)

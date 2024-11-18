@@ -14,7 +14,7 @@ class DownloadQueue:
         self.requests = {}  # {(index, begin): peer_id}
         self.completed_blocks = set()  # Set of (index, begin)
         self.peer_requests = {}  # {peer_id: [(index, begin)]}
-        self.bitfield = [0] * total_pieces  # Client's bitfield
+        self.bitfield = {}  # Client's bitfield
         self.choked_peers = set()  # Set of choked peer_ids
         self.unchoked_peers = set()  # Set of unchoked peer_ids
         self.interested_peers = set()  # Set of interested peer_ids
@@ -32,7 +32,13 @@ class DownloadQueue:
     def is_choked(self, peer_id):   
         """Check if a peer is choked."""
         return peer_id in self.choked_peers
-        
+    def initialize_bitfield(self,peer_id,bitfield =None):
+        """Initialize the bitfield for a peer."""
+        if bitfield is None:
+            bitfield = [0] * self.total_pieces
+        self.bitfield[peer_id] = bitfield
+
+
     def add_request(self, peer_id, index, begin, length):
         """Add a block request to the queue if it's not already requested or completed."""
         with self.lock:
@@ -50,6 +56,7 @@ class DownloadQueue:
             self.requests[key] = peer_id
             if peer_id not in self.peer_requests:
                 self.peer_requests[peer_id] = []
+                self.initialize_bitfield(peer_id)
             self.peer_requests[peer_id].append(key)
 
             print(f"[INFO] Added request for block {key} from peer {peer_id}")
@@ -66,7 +73,7 @@ class DownloadQueue:
                     self.peer_requests[peer_id].remove(key)
 
                 # Mark the piece as completed in the bitfield
-                self.bitfield[index] = 1
+                self.bitfield[peer_id][index] = 1
                 print(f"[INFO] Block {key} marked as completed by peer {peer_id}")
 
     def choke_peer(self, peer_id):
@@ -100,10 +107,7 @@ class DownloadQueue:
     def update_bitfield(self, peer_id, bitfield):
         """Update the bitfield for a peer."""
         with self.lock:
-            for index, bit in enumerate(bitfield):
-                if bit == 1 and self.bitfield[index] == 0:
-                    self.bitfield[index] = 1
-                    print(f"[INFO] Marked piece {index} as available based on peer {peer_id}'s bitfield")
+            self.bitfield[peer_id] = bitfield
 
     def get_next_request(self):
         """Get the next missing piece to request."""

@@ -101,6 +101,7 @@ class PieceManager:
                 self.bitfield[index] = 1
                 self.completed_pieces.add(index)
 
+
     def is_piece_complete(self, index):
         """Check if a specific piece is already downloaded."""
         piece_data = self.get_piece(index)
@@ -133,6 +134,9 @@ class PieceManager:
             piece_length = piece_info["length"]
 
             # Open the file in binary read mode
+            if not os.path.exists(file_path):
+                print(f"[INFO] File {file_path} is yet yo be exist.")
+                return None
             with open(file_path, "rb") as file:
                 # Calculate the start position for the piece within the file.
                 # If it's a new file, start from 0; otherwise, use the index.
