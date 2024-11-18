@@ -4,6 +4,7 @@ from message import *
 from peerqueue import DownloadQueue
 from piecemanager import PieceManager
 
+
 class Peer:
     def __init__(
         self,
@@ -27,9 +28,9 @@ class Peer:
         self.shared_dir = shared_dir
         self.downloaded_dir = downloaded_dir
         print("INITIALIZING PIECE MANAGER FOR SEED")
-        self.piece_manager_seed = PieceManager(torrent,self.shared_dir)
+        self.piece_manager_seed = PieceManager(torrent, self.shared_dir)
         print("INITIALIZING PIECE MANAGER FOR LEECH")
-        self.piece_manager_leech = PieceManager(torrent,self.downloaded_dir)
+        self.piece_manager_leech = PieceManager(torrent, self.downloaded_dir)
         self.download_queue = DownloadQueue(self.piece_manager_seed.get_total_pieces())
 
         self.am_choking = 1
@@ -46,11 +47,8 @@ class Peer:
         self.info_hash = torrent.info_hash
         self.info = torrent.info
 
-
         self.message_factory = MessageFactory()
         self.message_parser = MessageParser()
-
-
 
     def _create_peer_id(self, client_id, version_number="1000"):
         if (
@@ -80,7 +78,7 @@ class Peer:
             "is_seeder": self.is_seeder,
         }
         try:
-            print(f"[DEBUG] Registering with tracker: {self.tracker_url + "announce"}")  
+            print(f"[DEBUG] Registering with tracker: {self.tracker_url + "announce"}")
             response = requests.post(self.tracker_url + "announce", json=data)
             return response
         except requests.RequestException as e:
@@ -107,10 +105,8 @@ class Peer:
 
         try:
             while not self.shutdown_event.is_set():
-                conn, addr = (
-                    self.server_socket.accept()
-                )  
-                print(f"NEW ADDRESS RECEIVED:",addr)# block until receive a request
+                conn, addr = self.server_socket.accept()
+                print(f"NEW ADDRESS RECEIVED:", addr)  # block until receive a request
                 self.executor.submit(
                     self.handle_client, conn, addr
                 )  # threading running the handle_client function
@@ -132,9 +128,10 @@ class Peer:
                 return
 
             # Send handshake response
-            response = self.message_factory.handshake(self.info_hash, self.peer_id.encode())
+            response = self.message_factory.handshake(
+                self.info_hash, self.peer_id.encode()
+            )
             conn.sendall(response)
-            print(f"[INFO] Handshake with {addr} completed")
 
             # Step 2: Initialize bitfield if received
             peer_bitfield = None
@@ -190,18 +187,32 @@ class Peer:
 
                     # Handle "request" message for a piece
                     elif data["type"] == "request":
-                        index, begin, length = data["index"], data["begin"], data["length"]
-                        if self.download_queue.add_request(peer_id, index, begin, length):
+                        index, begin, length = (
+                            data["index"],
+                            data["begin"],
+                            data["length"],
+                        )
+                        if self.download_queue.add_request(
+                            peer_id, index, begin, length
+                        ):
                             piece_data = self.piece_manager_seed.get_piece(index)
                             if piece_data:
-                                piece_msg = self.message_factory.piece(index, begin, piece_data)
+                                piece_msg = self.message_factory.piece(
+                                    index, begin, piece_data
+                                )
                                 conn.sendall(piece_msg)
-                                self.download_queue.mark_completed(peer_id, index, begin)
+                                self.download_queue.mark_completed(
+                                    peer_id, index, begin
+                                )
                                 print(f"[INFO] Sent piece {index} to {addr}")
 
                     # Handle "piece" message
                     elif data["type"] == "piece":
-                        index, begin, block = data["index"], data["begin"], data["block"]
+                        index, begin, block = (
+                            data["index"],
+                            data["begin"],
+                            data["block"],
+                        )
                         self.piece_manager_seed.save_piece(index, block)
                         self.download_queue.mark_completed(peer_id, index, begin)
                         print(f"[INFO] Received block {begin} from {addr}")
@@ -218,7 +229,11 @@ class Peer:
 
                     # Handle "cancel" message
                     elif data["type"] == "cancel":
-                        index, begin, length = data["index"], data["begin"], data["length"]
+                        index, begin, length = (
+                            data["index"],
+                            data["begin"],
+                            data["length"],
+                        )
                         self.download_queue.cancel_request(peer_id, index, begin)
                         print(f"[INFO] Cancelled request for block {begin} from {addr}")
 
@@ -240,15 +255,13 @@ class Peer:
             self.download_queue.handle_disconnect(peer_id)
             print(f"[INFO] Connection with {addr} closed")
 
-
-
     def get_missing_pieces_from_peer(self, peer_bitfield):
         """
         Determine which pieces the peer has that we are missing.
-        
+
         Args:
             peer_bitfield (list[int]): The bitfield of the peer.
-        
+
         Returns:
             list[int]: List of piece indices that we are missing but the peer has.
         """
@@ -257,9 +270,6 @@ class Peer:
             if bit == 1 and not self.piece_manager_seed.get_next_missing_piece(index):
                 missing_pieces.append(index)
         return missing_pieces
-
-
-
 
     def get_piece(self, index):
         """Retrieve a piece by index for a specific file."""
@@ -278,28 +288,52 @@ class Peer:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             try:
                 client_socket.connect((peer_ip, peer_port))
-                
-                # Step 1: Send handshake
-                handshake = self.message_factory.handshake(self.info_hash, self.peer_id.encode())
+
+                ###########################
+                ##                       ##
+                ##   STEP 1: HANDSHAKE   ##
+                ##                       ##
+                ###########################
+
+                # Send client handshake
+                handshake = self.message_factory.handshake(
+                    self.info_hash, self.peer_id.encode()
+                )
                 client_socket.sendall(handshake)
 
-                # Receive handshake response
+                # Receive server handshake
                 response = client_socket.recv(1024)
                 data = self.message_parser.parse_message(response)
                 if data["type"] != "handshake":
                     return
+                print(f"[INFO] Handshake with ({peer_ip, peer_port}) completed")
 
-                bitfield_msg = self.message_factory.bitfield(self.piece_manager_leech.get_bitfield())
+                ###########################
+                ##                       ##
+                ##   STEP 2: BITFIELD    ##
+                ##                       ##
+                ###########################
+
+                # Send client bitfield
+                bitfield_msg = self.message_factory.bitfield(
+                    self.piece_manager_leech.get_bitfield()
+                )
                 client_socket.sendall(bitfield_msg)
 
                 time.sleep(0.5)  # Sleep briefly to avoid busy-waiting
-                # Step 2: Send INTERESTED message
+
+                ############################
+                ##                        ##
+                ##   STEP 3: INTERESTED   ##
+                ##                        ##
+                ############################
+
+                # Send client interested
                 interested_msg = self.message_factory.interested()
                 client_socket.sendall(interested_msg)
-                 
-                
-                # Step 3: Wait for UNCHOKE response
-                while True:
+
+                # Recieve server unchoke
+                while True:  # (maybe unnecessary)
                     response = client_socket.recv(1024)
                     print("[DEBUG] Waiting for UNCHOKE message...")
                     data = self.message_parser.parse_message(response)
@@ -307,18 +341,25 @@ class Peer:
                         break
                     time.sleep(0.5)  # Sleep briefly to avoid busy-waiting
 
-                # Step 4: Download all missing pieces
+                ##########################
+                ##                      ##
+                ##   STEP 4: DOWNLOAD   ##
+                ##                      ##
+                ##########################
+
                 while True:
                     print("[DEBUG] Requesting next missing piece...")
                     missing_piece = self.piece_manager_leech.get_next_missing_piece()
-                    
+
                     # If no more missing pieces, break the loop
                     if missing_piece is None:
                         print("[INFO] All pieces have been downloaded.")
                         break
 
-                    print(f"[DEBUG] Requesting piece {missing_piece} from {peer_ip}:{peer_port}")
-                    
+                    print(
+                        f"[DEBUG] Requesting piece {missing_piece} from {peer_ip}:{peer_port}"
+                    )
+
                     # Request the next missing piece
                     index, begin = missing_piece, 0
                     request_msg = self.message_factory.request(index, begin, 512 * 1024)
@@ -333,9 +374,15 @@ class Peer:
 
                         piece_data = self.message_parser.parse_message(response)
                         if piece_data["type"] == "piece":
-                            self.piece_manager_leech.save_piece(piece_data['index'], piece_data['block'])
-                            self.download_queue.mark_completed(peer_ip, piece_data['index'], 0)
-                            print(f"[INFO] Successfully downloaded piece {piece_data['index']}")
+                            self.piece_manager_leech.save_piece(
+                                piece_data["index"], piece_data["block"]
+                            )
+                            self.download_queue.mark_completed(
+                                peer_ip, piece_data["index"], 0
+                            )  # (what does begin do)
+                            print(
+                                f"[INFO] Successfully downloaded piece {piece_data['index']}"
+                            )
 
                     except socket.timeout:
                         print("[WARNING] Timeout while receiving piece. Retrying...")
@@ -345,9 +392,6 @@ class Peer:
                 print(f"[ERROR] Error downloading from {peer_ip}:{peer_port}: {e}")
             finally:
                 client_socket.close()
-
-
-
 
     def save_piece(self, file_path, index, data):
         """Save a piece to the file."""

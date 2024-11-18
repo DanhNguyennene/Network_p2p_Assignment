@@ -2,8 +2,9 @@ import os
 import hashlib
 import bencodepy
 
+
 class PieceManager:
-    def __init__(self, torrent_file,file_dir):
+    def __init__(self, torrent_file, file_dir):
         """
         Initialize the PieceManager with a .torrent file and download directory.
 
@@ -64,25 +65,34 @@ class PieceManager:
             torrent_data = self.torrent_file.json_torrent
             print(f"[INFO] Loading torrent file: {torrent_data}")
             # Extract essential metadata
-            self.piece_length = torrent_data[b'info'][b'piece_length']
-            self.pieces_hash = torrent_data[b'info'][b'pieces']
-            self.total_pieces = len(self.pieces_hash) // 20  # SHA1 hash size is 20 bytes
-            
+            self.piece_length = torrent_data[b"info"][b"piece_length"]
+            self.pieces_hash = torrent_data[b"info"][b"pieces"]
+            self.total_pieces = (
+                len(self.pieces_hash) // 20
+            )  # SHA1 hash size is 20 bytes
+
             # Load files information
-            if b'files' in torrent_data[b'info']:
-                for file_info in torrent_data[b'info'][b'files']:
-                    parent_dir = os.path.join(self.file_dir, torrent_data[b'info'][b'name'].decode())
-                    file_path = os.path.join(parent_dir, file_info[b'path'].decode())
-                    self.files.append({
-                        'length': file_info[b'length'],
-                        'path': file_path
-                    })  
+            if b"files" in torrent_data[b"info"]:
+                for file_info in torrent_data[b"info"][b"files"]:
+                    parent_dir = os.path.join(
+                        self.file_dir, torrent_data[b"info"][b"name"].decode()
+                    )
+                    file_path = os.path.join(parent_dir, file_info[b"path"].decode())
+                    self.files.append(
+                        {"length": file_info[b"length"], "path": file_path}
+                    )
             else:
-                file_path = os.path.join(self.file_dir, torrent_data[b'info'][b'name'].decode())
-                self.files.append({'length': torrent_data[b'info'][b'length'], 'path': file_path})
+                file_path = os.path.join(
+                    self.file_dir, torrent_data[b"info"][b"name"].decode()
+                )
+                self.files.append(
+                    {"length": torrent_data[b"info"][b"length"], "path": file_path}
+                )
 
             print(f"[INFO] Loaded .torrent file: {self.torrent_file}")
-            print(f"[INFO] Total pieces: {self.total_pieces}, Piece length: {self.piece_length}")
+            print(
+                f"[INFO] Total pieces: {self.total_pieces}, Piece length: {self.piece_length}"
+            )
 
         except Exception as e:
             print(f"[ERROR] Failed to load torrent file: {e}")
@@ -90,35 +100,33 @@ class PieceManager:
     def get_total_pieces(self):
         """Get the total number of pieces in the torrent."""
         return self.total_pieces
-    
+
     def initialize_bitfield(self):
         """Initialize the bitfield based on local storage."""
         self.bitfield = [0] * self.total_pieces
 
         # Check which pieces are already downloaded
         for index in range(self.total_pieces):
-            if self.is_piece_complete(index): 
+            if self.is_piece_complete(index):
                 self.bitfield[index] = 1
                 self.completed_pieces.add(index)
-
 
     def is_piece_complete(self, index):
         """Check if a specific piece is already downloaded."""
         piece_data = self.get_piece(index)
         if piece_data:
-            expected_hash = self.pieces_hash[index * 20:(index + 1) * 20]
+            expected_hash = self.pieces_hash[index * 20 : (index + 1) * 20]
             actual_hash = hashlib.sha1(piece_data).digest()
             return actual_hash == expected_hash
         return False
 
-
     def get_piece(self, index):
         """
         Retrieve a piece by its index, handling multiple files if necessary.
-        
+
         Args:
             index (int): The index of the piece to retrieve.
-            
+
         Returns:
             bytes: The data for the requested piece, or None if an error occurs.
         """
@@ -148,7 +156,7 @@ class PieceManager:
                         start_index += 1
                     else:
                         start_index = 0
-                
+
                 # Calculate the start position of the piece within the file
                 start = start_index * self.piece_length
                 file.seek(start)
@@ -158,7 +166,9 @@ class PieceManager:
 
                 # Verify that the retrieved piece is the correct size
                 if len(piece_data) != piece_length:
-                    print(f"[ERROR] Incomplete piece {index}. Expected {piece_length} bytes, got {len(piece_data)} bytes.")
+                    print(
+                        f"[ERROR] Incomplete piece {index}. Expected {piece_length} bytes, got {len(piece_data)} bytes."
+                    )
                     return None
 
             return piece_data
@@ -170,7 +180,7 @@ class PieceManager:
     def save_piece(self, index, data):
         """
         Save a downloaded piece to the appropriate file(s), creating files if necessary.
-        
+
         Args:
             index (int): The index of the piece.
             data (bytes): The data to save.
@@ -189,14 +199,14 @@ class PieceManager:
         # Find the total size of the file associated with this piece
         file_size = None
         for file_info in self.files:
-            if file_info['path'] == file_path:
-                file_size = file_info['length']
+            if file_info["path"] == file_path:
+                file_size = file_info["length"]
                 break
 
         if not os.path.exists(file_path):
             with open(file_path, "wb") as f:
                 if file_size is not None:
-                    f.truncate(file_size) 
+                    f.truncate(file_size)
 
         # Open the file in read and write binary mode
         with open(file_path, "r+b") as file:
@@ -213,11 +223,11 @@ class PieceManager:
             # Move to the correct starting position and write the data
             start = start_index * self.piece_length
             file.seek(start)
-            
+
             file.write(data[:piece_length])
 
         # Mark as complete and verify
-        self.mark_piece_completed(index)
+        # self.mark_piece_completed(index)
         if not self.verify_piece(index):
             print(f"[ERROR] Piece {index} failed verification after saving.")
         else:
@@ -226,10 +236,10 @@ class PieceManager:
     def verify_piece(self, index):
         """
         Verify a specific piece by its index.
-        
+
         Args:
             index (int): The index of the piece to verify.
-            
+
         Returns:
             bool: True if the piece is verified, False otherwise.
         """
@@ -238,9 +248,9 @@ class PieceManager:
         if not piece_data:
             print(f"[ERROR] Could not read piece {index}")
             return False
-        
+
         # Calculate the SHA-1 hash of the piece
-        expected_hash = self.pieces_hash[index * 20:(index + 1) * 20]
+        expected_hash = self.pieces_hash[index * 20 : (index + 1) * 20]
         actual_hash = hashlib.sha1(piece_data).digest()
 
         # Compare the actual hash with the expected hash
@@ -251,15 +261,17 @@ class PieceManager:
         else:
             print(f"[ERROR] Verification failed for piece {index}.")
             return False
+
     def mark_piece_completed(self, index):
         """Mark a specific piece as completed."""
         self.bitfield[index] = 1
         self.completed_pieces.add(index)
         print(f"[INFO] Piece {index} marked as completed")
+
     def verify_all_pieces(self):
         """
         Verify all pieces sequentially.
-        
+
         Returns:
             int: The number of verified pieces.
         """

@@ -1,10 +1,11 @@
 from threading import Lock
 
+
 class DownloadQueue:
     def __init__(self, total_pieces, capacity=4):
         """
         Initialize the DownloadQueue with bitfield management and choking capacity.
-        
+
         Args:
             total_pieces (int): Total number of pieces in the torrent.
             capacity (int): The maximum number of peers that can be unchoked simultaneously.
@@ -28,15 +29,16 @@ class DownloadQueue:
         """Remove a peer from the interested list."""
         with self.lock:
             self.interested_peers.discard(peer_id)
-    def is_choked(self, peer_id):   
+
+    def is_choked(self, peer_id):
         """Check if a peer is choked."""
         return peer_id in self.choked_peers
-    def initialize_bitfield(self,peer_id,bitfield =None):
+
+    def initialize_bitfield(self, peer_id, bitfield=None):
         """Initialize the bitfield for a peer."""
         if bitfield is None:
             bitfield = [0] * self.total_pieces
         self.bitfield[peer_id] = bitfield
-
 
     def add_request(self, peer_id, index, begin, length):
         """Add a block request to the queue if it's not already requested or completed."""
@@ -48,11 +50,15 @@ class DownloadQueue:
                 return False
 
             if key in self.requests:
-                print(f"[INFO] Block {index} at begin {begin} is already requested or completed.")
+                print(
+                    f"[INFO] Block {index} at begin {begin} is already requested or completed."
+                )
                 return False
-            
-            if self.bitfield[peer_id] and self.bitfield[peer_id][index]==1:
-                print(f"[DEBUG] Peer {peer_id} already has block {index}. Not adding request.")
+
+            if self.bitfield[peer_id] and self.bitfield[peer_id][index] == 1:
+                print(
+                    f"[DEBUG] Peer {peer_id} already has block {index}. Not adding request."
+                )
                 return False
 
             # Add the request to the queue
@@ -141,7 +147,7 @@ class DownloadQueue:
 
             # Choke excess peers if we are over capacity
             if len(self.unchoked_peers) > self.capacity:
-                extra_peers = list(self.unchoked_peers)[self.capacity:]
+                extra_peers = list(self.unchoked_peers)[self.capacity :]
                 for peer_id in extra_peers:
                     self.choke_peer(peer_id)
                     print(f"[INFO] Choked peer {peer_id} due to capacity limit")
