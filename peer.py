@@ -109,7 +109,8 @@ class Peer:
             while not self.shutdown_event.is_set():
                 conn, addr = (
                     self.server_socket.accept()
-                )  # block until receive a request
+                )  
+                print(f"NEW ADDRESS RECEIVED:",addr)# block until receive a request
                 self.executor.submit(
                     self.handle_client, conn, addr
                 )  # threading running the handle_client function

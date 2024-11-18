@@ -12,7 +12,6 @@ class DownloadQueue:
         self.total_pieces = total_pieces
         self.capacity = capacity
         self.requests = {}  # {(index, begin): peer_id}
-        self.completed_blocks = set()  # Set of (index, begin)
         self.peer_requests = {}  # {peer_id: [(index, begin)]}
         self.bitfield = {}  # Client's bitfield
         self.choked_peers = set()  # Set of choked peer_ids
@@ -48,12 +47,15 @@ class DownloadQueue:
                 print(f"[INFO] Peer {peer_id} is choked. Cannot add request.")
                 return False
 
-            if key in self.requests or key in self.completed_blocks:
-                print(f"[INFO] Block {key} is already requested or completed.")
+            if key in self.requests:
+                print(f"[INFO] Block {index} at begin {begin} is already requested or completed.")
+                return False
+            
+            if self.bitfield[peer_id] and self.bitfield[peer_id][index]==1:
+                print(f"[DEBUG] Peer {peer_id} already has block {index}. Not adding request.")
                 return False
 
             # Add the request to the queue
-            self.requests[key] = peer_id
             if peer_id not in self.peer_requests:
                 self.peer_requests[peer_id] = []
                 self.initialize_bitfield(peer_id)
@@ -68,7 +70,6 @@ class DownloadQueue:
             key = (index, begin)
             if key in self.requests and self.requests[key] == peer_id:
                 del self.requests[key]
-                self.completed_blocks.add(key)
                 if peer_id in self.peer_requests:
                     self.peer_requests[peer_id].remove(key)
 

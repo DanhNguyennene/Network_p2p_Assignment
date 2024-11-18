@@ -52,22 +52,23 @@ def run_seeders_and_leechers(num_seeders=1, num_leechers=2):
     # Give some time for peers to start up
     time.sleep(2)
 
-    # Leechers start downloading from seeders
-    for leecher in [p for p in peers if not p.is_seeder]:
-        leecher.download_piece(seeder.ip, seeder.port)
-        # for file_info in leecher.files:
-        #     file_path = file_info["path"]
-        #     print(file_path)
-        #     for i in range(file_info["num_pieces"]):
-        #         if not leecher.pieces_downloaded[file_path][i]:
-        #             for seeder in [p for p in peers if p.is_seeder]:
-        #                 try:
-        #                     leecher.download_piece(file_path, i, seeder.ip, seeder.port)
-        #                 except Exception as e:
-        #                     print(
-        #                         f"Error downloading piece {i} of {file_path} from {seeder.peer_id}: {e}"
-        #                     )
-        #                 break
+    def download_from_seeder(leecher, seeder_ip, seeder_port):
+        leecher.download_piece(seeder_ip, seeder_port)
+
+    # Assuming you have a list of peers and a seeder
+    with ThreadPoolExecutor() as executor:
+        # Iterate through all leechers and submit their download tasks to the executor
+        futures = [
+            executor.submit(download_from_seeder, leecher, seeder.ip, seeder.port)
+            for leecher in [p for p in peers if not p.is_seeder]
+        ]
+
+        # Optionally, wait for all downloads to complete
+        for future in futures.as_completed(futures):
+            try:
+                future.result()  # You can check for exceptions here
+            except Exception as e:
+                print(f"Error downloading piece: {e}")
 
     print("Press Ctrl+C to stop all peers...")
 
