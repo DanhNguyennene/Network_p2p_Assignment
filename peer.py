@@ -120,23 +120,34 @@ class Peer:
         print(f"Accepted connection from {addr}")
 
         try:
-            # Step 1: Receive handshake and send response
+
+            ###########################
+            ##                       ##
+            ##   STEP 1: HANDSHAKE   ##
+            ##                       ##
+            ###########################
+
+            # Receive client handshake
             request = conn.recv(1024)
             data = self.message_parser.parse_message(request)
             if data is None or data["type"] != "handshake":
                 print(f"[ERROR] Invalid handshake from {addr}")
                 return
 
-            # Send handshake response
+            # Send server handshake
             response = self.message_factory.handshake(
                 self.info_hash, self.peer_id.encode()
             )
             conn.sendall(response)
 
-            # Step 2: Initialize bitfield if received
+            ##########################
+            ##                      ##
+            ##   STEP 2: HANDLE     ##
+            ##                      ##
+            ##########################
+
             peer_bitfield = None
 
-            # Step 3: Handle messages from the peer
             while True:
                 try:
                     request = conn.recv(1024)
@@ -146,7 +157,10 @@ class Peer:
                         print(f"[INFO] Connection closed by peer {addr}")
                         break
 
+                    # Parse message
                     data = self.message_parser.parse_message(request)
+
+                    # Handle error message
                     if data is None:
                         print(f"[ERROR] Received invalid message from {addr}")
                         continue
@@ -334,8 +348,8 @@ class Peer:
 
                 # Recieve server unchoke
                 while True:  # (maybe unnecessary)
-                    response = client_socket.recv(1024)
                     print("[DEBUG] Waiting for UNCHOKE message...")
+                    response = client_socket.recv(1024)
                     data = self.message_parser.parse_message(response)
                     if data["type"] == "unchoke":
                         break
