@@ -9,29 +9,28 @@ class Peer:
     def __init__(
         self,
         torrent,
-        client_id,
+        id,
         ip,
         port,
-        is_seeder=False,
-        shared_dir="./TO_BE_SHARED",
-        downloaded_dir="./downloads",
+        dir,
     ):
-        self.peer_id = self._create_peer_id(client_id)
+        self.id = id
         self.ip = ip
         self.port = port
-        self.is_seeder = is_seeder
+        self.is_seeder = False
         self.server_socket = None
 
         self.downloaded = 0
         self.uploaded = 0
 
-        self.shared_dir = shared_dir
-        self.downloaded_dir = downloaded_dir
-        print("INITIALIZING PIECE MANAGER FOR SEED")
-        self.piece_manager_seed = PieceManager(torrent, self.shared_dir)
-        print("INITIALIZING PIECE MANAGER FOR LEECH")
-        self.piece_manager_leech = PieceManager(torrent, self.downloaded_dir)
-        self.download_queue = DownloadQueue(self.piece_manager_seed.get_total_pieces())
+        self.available_peers = []
+        self.interval = 0
+
+        self.dir = dir
+        print("INITIALIZING PIECE MANAGER FOR PEER")
+        self.piece_manager = PieceManager(torrent, self.dir)
+        print(f"[DEBUG] {self.id} bitfield: {self.piece_manager.get_bitfield()}")
+        self.download_queue = DownloadQueue(self.piece_manager.get_total_pieces())
 
         self.am_choking = 1
         self.am_interested = 0
@@ -50,58 +49,74 @@ class Peer:
         self.message_factory = MessageFactory()
         self.message_parser = MessageParser()
 
-    def _create_peer_id(self, client_id, version_number="1000"):
-        if (
-            len(client_id) != 2
-            or not any(c.isdigit() for c in client_id)
-            or not any(c.isalpha() for c in client_id)
-        ):
-            raise ValueError("Client ID containing 2 letters or numbers")
-        if len(version_number) != 4 or not version_number.isdigit():
-            raise ValueError("Version number must be exactly four digits")
+        self._update_is_seeder()
 
-        random_part = "".join(random.choices(string.digits, k=8))
+    # def _update_is_seeder(self):
+    #     self.is_seeder
 
-        peer_id = f"-{client_id.upper()}{version_number}-{random_part}-"
-
-        return peer_id
+    def _update_is_seeder(self):
+        bitfield = self.piece_manager.get_bitfield()
+        self.is_seeder = len(bitfield) == sum(bitfield)
 
     def register_with_tracker(self):
-        """Register with the tracker and get a list of peers."""
-        data = {
-            "info_hash": self.info_hash.hex(),
-            "peer_id": self.peer_id,
-            "ip": self.ip,
-            "port": self.port,
-            "downloaded": self.downloaded,
-            "uploaded": self.uploaded,
-            "is_seeder": self.is_seeder,
-        }
         try:
-            print(f"[DEBUG] Registering with tracker: {self.tracker_url + "announce"}")
-            response = requests.post(self.tracker_url + "announce", json=data)
-            return response
+            while not self.shutdown_event.is_set():
+                """Register with the tracker and get a list of peers."""
+                data = {
+                    "info_hash": self.info_hash.hex(),
+                    "peer_id": self.id,
+                    "ip": self.ip,
+                    "port": self.port,
+                    "downloaded": self.downloaded,
+                    "uploaded": self.uploaded,
+                    "is_seeder": self.is_seeder,
+                }
+
+                print(
+                    f"[DEBUG] {self.id} Registering with tracker: {self.tracker_url + "announce"}"
+                )
+                response = requests.get(self.tracker_url + "announce", json=data)
+
+                # Parse the reponse received from tracker
+                if response.status_code == 200:
+                    peer_data = response.json()
+
+                    self.available_peers = peer_data.get("peers", [])
+                    print(
+                        f"[DEBUG] Peer {self.id} available peers: {self.available_peers}"
+                    )
+                    self.interval = peer_data.get("interval", 0)
+
+                    print(
+                        f"[DEBUG] {self.id} Updated available peers: {self.available_peers}"
+                    )
+                else:
+                    print(
+                        f"[ERROR] {self.id} Failed to fetch peers. Status code: {response.status_code}"
+                    )
+
+                # Sleep for interval
+                time.sleep(self.interval)
         except requests.RequestException as e:
             print(f"[ERROR] registering with tracker: {e}")
-            return []
 
-    def get_peers(self):
-        """Get the list of peers from the tracker"""
-        data = {
-            "info_hash": self.info_hash,
-        }
-        try:
-            response = requests.get(self.tracker_url + "get_peers", json=data)
-            return response.json()
-        except request.RequestException as e:
-            print(f"[ERROR] fetching data from tracker: {e}")
+    # def get_peers(self):
+    #     """Get the list of peers from the tracker"""
+    #     data = {
+    #         "info_hash": self.info_hash,
+    #     }
+    #     try:
+    #         response = requests.get(self.tracker_url + "get_peers", json=data)
+    #         return response.json()
+    #     except request.RequestException as e:
+    #         print(f"[ERROR] fetching data from tracker: {e}")
 
     def start_server(self):
         """Start the peer server to handle piece requests."""
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server_socket.bind((self.ip, self.port))
         self.server_socket.listen()
-        print(f"Peer {self.peer_id} listening on {self.ip}:{self.port}")
+        print(f"Peer {self.id} listening on {self.ip}:{self.port}")
 
         try:
             while not self.shutdown_event.is_set():
@@ -135,9 +150,7 @@ class Peer:
                 return
 
             # Send server handshake
-            response = self.message_factory.handshake(
-                self.info_hash, self.peer_id.encode()
-            )
+            response = self.message_factory.handshake(self.info_hash, self.id.encode())
             conn.sendall(response)
 
             ##########################
@@ -297,11 +310,12 @@ class Peer:
             print(f"[ERROR] Error reading piece {index} from {self.shared_dir}: {e}")
             return b""
 
-    def download_piece(self, peer_ip, peer_port):
+    def download_piece(self):
         """Download all pieces sequentially from a peer."""
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
             try:
                 client_socket.connect((peer_ip, peer_port))
+                print(f"[DEBUG] Connected with ({peer_ip, peer_port})")
 
                 ###########################
                 ##                       ##
@@ -311,7 +325,7 @@ class Peer:
 
                 # Send client handshake
                 handshake = self.message_factory.handshake(
-                    self.info_hash, self.peer_id.encode()
+                    self.info_hash, self.id.encode()
                 )
                 client_socket.sendall(handshake)
 

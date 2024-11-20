@@ -21,11 +21,11 @@ class PieceManager:
         self.pieces_hash = []
         self.pieces_dict = {}
         self.files = []
-        self.load_torrent()
-        self.split_files_into_pieces()
-        self.initialize_bitfield()
+        self._load_torrent()
+        self._split_files_into_pieces()
+        self._initialize_bitfield()
 
-    def split_files_into_pieces(self):
+    def _split_files_into_pieces(self):
         """
         Split each file in self.files into pieces based on self.piece_length.
 
@@ -59,7 +59,7 @@ class PieceManager:
                 offset += current_piece_length
                 piece_index += 1
 
-    def load_torrent(self):
+    def _load_torrent(self):
         """Load metadata from the .torrent file."""
         try:
             torrent_data = self.torrent_file.json_torrent
@@ -101,7 +101,7 @@ class PieceManager:
         """Get the total number of pieces in the torrent."""
         return self.total_pieces
 
-    def initialize_bitfield(self):
+    def _initialize_bitfield(self):
         """Initialize the bitfield based on local storage."""
         self.bitfield = [0] * self.total_pieces
 
@@ -294,7 +294,7 @@ class PieceManager:
 
     def get_bitfield(self):
         """Get the current bitfield."""
-        return bytes(self.bitfield)
+        return self.bitfield
 
     def update_bitfield(self, bitfield):
         """Update the bitfield with information from another peer."""

@@ -83,7 +83,7 @@ class Tracker:
                 "downloaded": data.get("downloaded", 0),
                 "uploaded": data.get("uploaded", 0),
                 "left": data.get("left", 0),
-                "is_seeder": data.get("left", 0) == 0,
+                "is_seeder": data.get("is_seeder", 0) == 0,
                 "last_seen": datetime.now(),
             }
 

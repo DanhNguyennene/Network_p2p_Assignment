@@ -1,11 +1,12 @@
 from lib import *
 
+
 def get_files_in_directory(directory):
     """Recursively gets all files in the directory."""
     # Convert the directory path to an absolute path and normalize it
     directory = os.path.abspath(directory)
     directory = os.path.normpath(directory)
-    
+
     file_list = []
 
     # Walk through the directory and gather all files
@@ -14,10 +15,10 @@ def get_files_in_directory(directory):
         for file in files:
             full_path = os.path.normpath(os.path.join(cur_dir, file))
             relative_path = os.path.relpath(full_path, directory)
-            
+
             # Append the relative path and the full path to the file_list
             file_list.append((relative_path, full_path))
-    
+
     return file_list
 
 
@@ -45,7 +46,7 @@ def split_file(file_path, piece_size=512 * 1024):
 
     if file_size < piece_size:
         with open(file_path, "rb") as f:
-            piece = f.read() 
+            piece = f.read()
             hash_piece = hashlib.sha1(piece).digest()
             pieces += hash_piece
 
@@ -75,10 +76,16 @@ def split_file(file_path, piece_size=512 * 1024):
     return pieces
 
 
-def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024):
+def generate_torrent(
+    peer_directory,
+    peer_files_directory,
+    tracker_url,
+    output_name,
+    piece_size=512 * 1024,
+):
     """Generates a .torrent file for the specified directory."""
-    file_paths = get_files_in_directory(directory)
-    print(f"[DEBUG] Found {file_paths} files in directory: {directory}")
+    file_paths = get_files_in_directory(peer_files_directory)
+    print(f"[DEBUG] Found {file_paths} files in directory: {peer_files_directory}")
     pieces = []
     files = []
 
@@ -95,14 +102,14 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
                 "path": relative_path,
             }
         )
-#  -------------------   
+    #  -------------------
     # Create the torrent metadata
     torrent_info = {
         "announce": tracker_url,
         "info": {
             "piece_length": piece_size,
             "pieces": b"".join(pieces),
-            "name": os.path.basename(os.path.normpath(directory)),
+            "name": os.path.basename(os.path.normpath(peer_files_directory)),
             "files": files,
         },
     }
@@ -111,9 +118,7 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
     encoded_torrent = bencodepy.encode(torrent_info)
 
     # Write the .torrent file
-    torrent_file_path = os.path.join(
-        output_path, f"{os.path.basename(directory)}.torrent"
-    )
+    torrent_file_path = os.path.join(peer_directory, f"{output_name}")
     with open(torrent_file_path, "wb") as f:
         f.write(encoded_torrent)
 
@@ -127,3 +132,47 @@ def generate_torrent(directory, tracker_url, output_path, piece_size=512 * 1024)
     #                 print(f"{fkey}: {fvalue}")
 
     # print(f"Hash size: {len(torrent_info['info']['pieces'])}")
+
+
+def generate_peer_info(num_peer):
+    peer_info = {}
+
+    for i in range(num_peer):
+        peer_id = generate_peer_id(f"A{i+1}")
+        peer_ip = "127.0.0.1"
+        peer_port = 6881 + i
+        peer_torrent = f"torrent_{peer_id}.torrent"
+        peer_directory = f"peer_{peer_id[1:3]}"
+        peer_files_directory = "files"
+
+        peer_info[peer_id] = {
+            "address": (peer_ip, peer_port),
+            "torrent_name": peer_torrent,
+            "directory": peer_directory,
+            "files_directory": os.path.join(peer_directory, peer_files_directory),
+        }
+
+    return peer_info
+
+
+def generate_tracker_info():
+    tracker_info = {"url": "http://127.0.0.1:8000/"}
+
+    return tracker_info
+
+
+def generate_peer_id(client_id, version_number="1000"):
+    if (
+        len(client_id) != 2
+        or not any(c.isdigit() for c in client_id)
+        or not any(c.isalpha() for c in client_id)
+    ):
+        raise ValueError("Client ID containing 2 letters or numbers")
+    if len(version_number) != 4 or not version_number.isdigit():
+        raise ValueError("Version number must be exactly four digits")
+
+    random_part = "".join(random.choices(string.digits, k=8))
+
+    peer_id = f"-{client_id.upper()}{version_number}-{random_part}-"
+
+    return peer_id
