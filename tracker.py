@@ -83,7 +83,7 @@ class Tracker:
                 "downloaded": data.get("downloaded", 0),
                 "uploaded": data.get("uploaded", 0),
                 "left": data.get("left", 0),
-                "is_seeder": data.get("is_seeder", 0) == 0,
+                "is_seeder": data.get("is_seeder", 0),
                 "last_seen": datetime.now(),
             }
 
@@ -136,7 +136,7 @@ class Tracker:
 
         @app.route("/announce", methods=["GET"])
         def announce():
-            """Handle peer announcements."""
+            "`1" "Handle peer announcements." ""
             try:
                 data = request.get_json()
                 if not data or "info_hash" not in data:
@@ -150,8 +150,8 @@ class Tracker:
                 peers = self._get_peers(data["info_hash"])
 
                 response_data = {
-                    "interval": 120,  # 2 minutes
-                    "min interval": 60,
+                    "interval": 5,  # 2 minutes
+                    "min interval": 0,
                     "tracker id": self.tracker_id,
                     "complete": complete,
                     "incomplete": incomplete,

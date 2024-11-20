@@ -77,15 +77,15 @@ def split_file(file_path, piece_size=512 * 1024):
 
 
 def generate_torrent(
-    peer_directory,
-    peer_files_directory,
+    directory,
+    files_directory,
     tracker_url,
     output_name,
     piece_size=512 * 1024,
 ):
     """Generates a .torrent file for the specified directory."""
-    file_paths = get_files_in_directory(peer_files_directory)
-    print(f"[DEBUG] Found {file_paths} files in directory: {peer_files_directory}")
+    file_paths = get_files_in_directory(files_directory)
+    print(f"[DEBUG] Found {file_paths} files in directory: {files_directory}")
     pieces = []
     files = []
 
@@ -109,7 +109,7 @@ def generate_torrent(
         "info": {
             "piece_length": piece_size,
             "pieces": b"".join(pieces),
-            "name": os.path.basename(os.path.normpath(peer_files_directory)),
+            "name": os.path.basename(os.path.normpath(files_directory)),
             "files": files,
         },
     }
@@ -118,7 +118,7 @@ def generate_torrent(
     encoded_torrent = bencodepy.encode(torrent_info)
 
     # Write the .torrent file
-    torrent_file_path = os.path.join(peer_directory, f"{output_name}")
+    torrent_file_path = os.path.join(directory, f"{output_name}")
     with open(torrent_file_path, "wb") as f:
         f.write(encoded_torrent)
 
@@ -141,15 +141,13 @@ def generate_peer_info(num_peer):
         peer_id = generate_peer_id(f"A{i+1}")
         peer_ip = "127.0.0.1"
         peer_port = 6881 + i
-        peer_torrent = f"torrent_{peer_id}.torrent"
-        peer_directory = f"peer_{peer_id[1:3]}"
-        peer_files_directory = "files"
+        directory = f"peer_{peer_id[1:3]}"
+        files_directory = "files"
 
         peer_info[peer_id] = {
             "address": (peer_ip, peer_port),
-            "torrent_name": peer_torrent,
-            "directory": peer_directory,
-            "files_directory": os.path.join(peer_directory, peer_files_directory),
+            "directory": directory,
+            "files_directory": os.path.join(directory, files_directory),
         }
 
     return peer_info

@@ -7,7 +7,7 @@ import socket
 import threading
 import os
 import select
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from concurrent import futures
 from flask import Flask, request, jsonify
 import signal

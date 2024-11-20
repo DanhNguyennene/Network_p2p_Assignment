@@ -30,29 +30,31 @@ class Network:
         self.tracker_info = tracker_info
 
         self.peers = []
-        self.peer_threads = []
+        self.peer_servers = []
+        self.connection_with_trackers = []
 
     def setup(self):
+        shared_files_directory = r"TO_BE_SHARED"
+        torrent_name = f"{shared_files_directory}.torrent"
+        torrent_directory = "torrents"
+        # Generate the torrent for the files in the 'files' subdirectory
+        generate_torrent(
+            torrent_directory,
+            shared_files_directory,
+            self.tracker_info["url"],
+            torrent_name,
+        )
+
         for peer_id, peer_info in self.peer_infos.items():
-
-            # Ensure the peer's directory and the files subdirectory exist
-            os.makedirs(peer_info["files_directory"], exist_ok=True)
-
-            # Generate the torrent for the files in the 'files' subdirectory
-            generate_torrent(
-                peer_info["directory"],
-                peer_info["files_directory"],
-                self.tracker_info["url"],
-                peer_info["torrent_name"],
-            )
+            torrent_path = os.path.join(torrent_directory, torrent_name)
+            torrent = Torrent()
+            torrent.load_torrent(torrent_path)
 
             peer_ip, peer_port = peer_info["address"]
             peer_directory = peer_info["directory"]
-            peer_torrent_name = peer_info["torrent_name"]
 
-            torrent_path = os.path.join(peer_directory, peer_torrent_name)
-            torrent = Torrent()
-            torrent.load_torrent(torrent_path)
+            # Ensure the peer's directory and the files subdirectory exist
+            os.makedirs(peer_directory, exist_ok=True)
 
             # Create the peer
             peer = Peer(
@@ -72,44 +74,58 @@ class Network:
             connection_with_tracker_thread.daemon = True
             connection_with_tracker_thread.start()
 
-            print(
-                f"[DEBUG] Peer {peer.ip} is connecting with Tracker {self.tracker_info["url"]}"
-            )
+            self.connection_with_trackers.append(connection_with_tracker_thread)
 
         for peer in self.peers:
-            server_thread = threading.Thread(target=peer.start_server)
-            server_thread.daemon = True
-            server_thread.start()
+            peer_server_thread = threading.Thread(target=peer.start_server)
+            peer_server_thread.daemon = True
+            peer_server_thread.start()
 
-            print(f"[DEBUG] Peer {peer.ip} is running on port {peer.port}")
-
-            self.peer_threads.append(server_thread)
+            self.peer_servers.append(peer_server_thread)
 
     def run(self):
-        def download_from_seeder(peer):
-            peer.download_piece()
+        def start_p2p_connections(peer):
+            peer.start_clients()
 
-        # Assuming you have a list of peers and a seeder
-        with ThreadPoolExecutor() as executor:
-            # Iterate through all leechers and submit their download tasks to the executor
-            futures = [
-                executor.submit(download_from_seeder, peer)
-                for peer in [p for p in self.peers]
-            ]
+        try:
+            with ThreadPoolExecutor() as executor:
+                futures = [
+                    executor.submit(start_p2p_connections, peer) for peer in self.peers
+                ]
 
-            # Optionally, wait for all downloads to complete
-            for future in futures.as_completed(futures):
-                try:
-                    future.result()  # You can check for exceptions here
-                except Exception as e:
-                    print(f"Error downloading piece: {e}")
+                for future in as_completed(futures):
+                    try:
+                        future.result()
+                    except Exception as e:
+                        print(f"Error in P2P connections: {e}")
 
-        print("Press Ctrl+C to stop all peers...")
+            print("Press Ctrl+C to stop all peers...")
+
+        except KeyboardInterrupt:
+            print("\nShutting down...")
+
+        finally:
+            self.shutdown()
+
+    def shutdown(self):
+        for peer in self.peers:
+            try:
+                peer.shutdown()  # Assuming Peer has a method to stop server
+            except Exception as e:
+                print(f"Error stopping peer server: {e}")
+
+        for thread in self.peer_servers:
+            if thread.is_alive():
+                thread.join(timeout=1)
+
+        for thread in self.connection_with_trackers:
+            if thread.is_alive():
+                thread.join(timeout=1)
 
 
 if __name__ == "__main__":
     # Number of peer in the network
-    num_peer = 3
+    num_peer = 2
     # The peer peer_info can be specified by users are generated automatically
     peer_infos = generate_peer_info(num_peer)
     tracker_info = generate_tracker_info()

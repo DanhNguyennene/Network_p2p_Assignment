@@ -46,12 +46,14 @@ class DownloadQueue:
             key = (index, begin)
 
             if self.is_choked(peer_id):
-                print(f"[INFO] Peer {peer_id} is choked. Cannot add request.")
+                print(
+                    f"[DEBUG] add_request() Peer {peer_id} is choked. Cannot add request."
+                )
                 return False
 
             if key in self.requests:
                 print(
-                    f"[INFO] Block {index} at begin {begin} is already requested or completed."
+                    f"[DEBUG] Block {index} at begin {begin} is already requested or completed."
                 )
                 return False
 
@@ -67,7 +69,6 @@ class DownloadQueue:
                 self.initialize_bitfield(peer_id)
             self.peer_requests[peer_id].append(key)
 
-            print(f"[INFO] Added request for block {key} from peer {peer_id}")
             return True
 
     def mark_completed(self, peer_id, index, begin):
@@ -96,9 +97,7 @@ class DownloadQueue:
             if len(self.unchoked_peers) < self.capacity:
                 self.choked_peers.discard(peer_id)
                 self.unchoked_peers.add(peer_id)
-                print(f"[INFO] Unchoked peer {peer_id}")
                 return True
-            print(f"[INFO] Cannot unchoke peer {peer_id}, capacity reached.")
             return False
 
     def cancel_request(self, peer_id, index, begin):
@@ -135,7 +134,6 @@ class DownloadQueue:
                 self.choked_peers.discard(peer_id)
                 self.unchoked_peers.discard(peer_id)
                 self.interested_peers.discard(peer_id)
-            print(f"[INFO] Disconnected peer {peer_id}")
 
     def manage_unchoking(self):
         """Dynamically unchoke interested peers based on capacity."""

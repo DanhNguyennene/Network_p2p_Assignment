@@ -74,17 +74,13 @@ class PieceManager:
             # Load files information
             if b"files" in torrent_data[b"info"]:
                 for file_info in torrent_data[b"info"][b"files"]:
-                    parent_dir = os.path.join(
-                        self.file_dir, torrent_data[b"info"][b"name"].decode()
-                    )
+                    parent_dir = self.file_dir
                     file_path = os.path.join(parent_dir, file_info[b"path"].decode())
                     self.files.append(
                         {"length": file_info[b"length"], "path": file_path}
                     )
             else:
-                file_path = os.path.join(
-                    self.file_dir, torrent_data[b"info"][b"name"].decode()
-                )
+                file_path = self.file_dir
                 self.files.append(
                     {"length": torrent_data[b"info"][b"length"], "path": file_path}
                 )
@@ -134,16 +130,18 @@ class PieceManager:
             # Retrieve the file and piece length information from the pieces dictionary
             piece_info = self.pieces_dict.get(index)
             if piece_info is None:
-                print(f"[ERROR] Piece index {index} does not exist.")
+                print(f"[ERROR] get_piece() Piece index {index} does not exist.")
                 return None
 
             file_path = piece_info["file"]
-            print(f"[INFO] Retrieving piece {index} from file: {file_path}")
+            print(
+                f"[DEBUG] get_piece() Retrieving piece {index} from file: {file_path}"
+            )
             piece_length = piece_info["length"]
 
             # Open the file in binary read mode
             if not os.path.exists(file_path):
-                print(f"[INFO] File {file_path} is yet yo be exist.")
+                print(f"[DEBUG] get_piece() File {file_path} is yet yo be exist.")
                 return None
             with open(file_path, "rb") as file:
                 # Calculate the start position for the piece within the file.
@@ -284,8 +282,6 @@ class PieceManager:
 
     def get_next_missing_piece(self):
         """Get the next missing piece to download."""
-        print(f"[INFO] Bitfield: {self.bitfield}")
-        print(f"total pieces: {self.total_pieces}")
         for i in range(self.total_pieces):
             if self.bitfield[i] == 0:
                 return i
@@ -294,7 +290,7 @@ class PieceManager:
 
     def get_bitfield(self):
         """Get the current bitfield."""
-        return self.bitfield
+        return bytes(self.bitfield)
 
     def update_bitfield(self, bitfield):
         """Update the bitfield with information from another peer."""
