@@ -28,7 +28,7 @@ class Peer:
 
         self.dir = dir
         print("INITIALIZING PIECE MANAGER FOR PEER")
-        self.piece_manager = PieceManager(torrent, os.path.join(dir, "files"))
+        self.piece_manager = PieceManager(torrent, dir)
         print(f"[DEBUG] {self.id} bitfield: {self.piece_manager.get_bitfield()}")
         self.download_queue = DownloadQueue(self.piece_manager.get_total_pieces())
 

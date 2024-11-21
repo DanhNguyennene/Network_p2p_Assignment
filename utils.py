@@ -142,7 +142,7 @@ def generate_peer_info(num_peer):
         peer_ip = "127.0.0.1"
         peer_port = 6881 + i
         directory = f"peer_{peer_id[1:3]}"
-        files_directory = "files"
+        files_directory = "TO_BE_SHARED"
 
         peer_info[peer_id] = {
             "address": (peer_ip, peer_port),
