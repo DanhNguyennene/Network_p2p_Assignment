@@ -75,7 +75,10 @@ class MessageFactory:
         return struct.pack(
             f"!IBII{block_length}s", 9 + block_length, 7, index, begin, block
         )
-
+    @staticmethod
+    def dont_have_piece():
+        """dont_have_piece message: <len=0001+X><id=10>"""
+        return struct.pack("!IB", 1, 10)
     @staticmethod
     def cancel(index, begin, length):
         """Cancel message: <len=0013><id=8><index><begin><length>"""
@@ -137,6 +140,7 @@ class MessageParser:
             7: "piece",
             8: "cancel",
             9: "port",
+            10: "dont_have_piece",
         }
 
         # Check for valid message ID
@@ -170,7 +174,9 @@ class MessageParser:
         elif message_type == "port":
             listen_port = struct.unpack("!H", payload)[0]
             return {"type": "port", "listen_port": listen_port}
-
+        elif message_type == "dont_have_piece":
+            return {"type": "dont_have_piece"}
+        
         else:
             # Messages like choke, unchoke, interested, not_interested
             return {"type": message_type}

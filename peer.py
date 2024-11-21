@@ -241,6 +241,7 @@ class Peer:
                         print(
                             f"[DEBUG] handle_client() {self.id} Received bitfield from {addr}"
                         )
+                        print(f"[DEBUG] handle_client() {self.id} bitfield: {peer_bitfield}")
                         self.download_queue.update_bitfield(peer_id, peer_bitfield)
                         continue
 
@@ -278,6 +279,7 @@ class Peer:
                                 f"[DEBUG] handle_client() {self.id} added request for block {index} from peer {peer_id}"
                             )
                             piece_data = self.piece_manager.get_piece(index)
+
                             if piece_data:
                                 piece_msg = self.message_factory.piece(
                                     index, begin, piece_data
@@ -289,6 +291,15 @@ class Peer:
                                 print(
                                     f"[DEBUG] handle_client() {self.id} sent piece {index} to {addr}"
                                 )
+                            else:
+                                print(
+                                    f"[DEBUG] handle_client() {self.id} piece {index} not found"
+                                )
+                                piece_msg = self.message_factory.dont_have_piece()
+                                conn.sendall(piece_msg)
+
+                                # tạo ra một cái protocal nữa ở messgae thông báo là không có piêc đó để leecher nó hỏi piece kahcs
+
 
                     # Handle "piece" message
                     elif data["type"] == "piece":
@@ -377,6 +388,7 @@ class Peer:
                 )
 
                 # Perform the download process
+
                 self.download_piece(client_socket, peer_ip, peer_port)
 
         except Exception as e:
@@ -445,7 +457,7 @@ class Peer:
             ##   STEP 4: DOWNLOAD   ##
             ##                      ##
             ##########################
-
+            missing_index = 0
             while True:
                 missing_piece = self.piece_manager.get_next_missing_piece()
 
@@ -455,11 +467,11 @@ class Peer:
                     break
 
                 print(
-                    f"[DEBUG] download_piece() {self.id} requesting piece {missing_piece} from ({peer_ip},{peer_port})"
+                    f"[DEBUG] download_piece() {self.id} requesting piece {missing_piece[0]} from ({peer_ip},{peer_port})"
                 )
 
                 # Request the next missing piece
-                index, begin = missing_piece, 0
+                index, begin = missing_piece[missing_index], 0
                 request_msg = self.message_factory.request(index, begin, 512 * 1024)
                 client_socket.sendall(request_msg)
 
@@ -481,7 +493,12 @@ class Peer:
                         print(
                             f"[INFO] Successfully downloaded piece {piece_data['index']}"
                         )
-
+                    elif piece_data["type"] == "dont_have_piece":
+                        print(
+                            f"[INFO] Peer {peer_ip} does not have the requested piece"
+                        )
+                        missing_index+=1
+                        missing_piece = missing_piece[missing_index:]
                 except socket.timeout:
                     print("[WARNING] Timeout while receiving piece. Retrying...")
                     continue

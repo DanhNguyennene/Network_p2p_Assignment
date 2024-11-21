@@ -141,7 +141,7 @@ def generate_peer_info(num_peer):
         peer_id = generate_peer_id(f"A{i+1}")
         peer_ip = "127.0.0.1"
         peer_port = 6881 + i
-        directory = f"peer_{peer_id[1:3]}"
+        directory = f"peer_A{i+1}"
         files_directory = "TO_BE_SHARED"
 
         peer_info[peer_id] = {
@@ -161,13 +161,10 @@ def generate_tracker_info():
 
 def generate_peer_id(client_id, version_number="1000"):
     if (
-        len(client_id) != 2
-        or not any(c.isdigit() for c in client_id)
+        not any(c.isdigit() for c in client_id)
         or not any(c.isalpha() for c in client_id)
     ):
         raise ValueError("Client ID containing 2 letters or numbers")
-    if len(version_number) != 4 or not version_number.isdigit():
-        raise ValueError("Version number must be exactly four digits")
 
     random_part = "".join(random.choices(string.digits, k=8))
 

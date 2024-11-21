@@ -282,11 +282,13 @@ class PieceManager:
 
     def get_next_missing_piece(self):
         """Get the next missing piece to download."""
-        for i in range(self.total_pieces):
-            if self.bitfield[i] == 0:
-                return i
-        print(f"[INFO] All pieces have been downloaded!!!!!!!!!!!!!!!")
-        return None
+        missing_pieces = [i for i in range(self.total_pieces) if self.bitfield[i] == 0]
+        print(f"[DEBUG] Missing pieces: {self.bitfield}")
+        if missing_pieces:
+            return missing_pieces
+        else:
+            print(f"[INFO] All pieces have been downloaded!")
+            return None
 
     def get_bitfield(self):
         """Get the current bitfield."""
