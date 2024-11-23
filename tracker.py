@@ -68,6 +68,7 @@ class Tracker:
         """
         try:
             if not self._validate_peer_data(data):
+                print("Invalid peer data")
                 return False
 
             peer_id = data["peer_id"]
@@ -75,7 +76,7 @@ class Tracker:
 
             if info_hash not in self.peers:
                 self.peers[info_hash] = {}
-
+            
             self.peers[info_hash][peer_id] = {
                 "peer_id": peer_id,
                 "ip": data["ip"],

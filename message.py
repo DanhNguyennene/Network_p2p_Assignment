@@ -28,7 +28,10 @@ class MessageFactory:
     def choke():
         """Choke message: <len=0001><id=0>"""
         return struct.pack("!IB", 1, 0)  # Length prefix of 1, ID of 0
-
+    @staticmethod
+    def deny_unchoke():
+        """Unchoke message: <len=0001><id=11>"""
+        return struct.pack("!IB", 1, 11)  # Length prefix of 1, ID of 1
     @staticmethod
     def unchoke():
         """Unchoke message: <len=0001><id=1>"""
@@ -85,7 +88,10 @@ class MessageFactory:
         return struct.pack(
             "!IBIII", 13, 8, index, begin, length
         )  # Length prefix of 13, ID of 8
-
+    @staticmethod
+    def disconnect():
+        """Disconnect message: <len=0001><id=12>"""
+        return struct.pack("!IB", 1, 12)
     @staticmethod
     def port(listen_port):
         """Port message: <len=0003><id=9><listen-port>"""
@@ -141,6 +147,8 @@ class MessageParser:
             8: "cancel",
             9: "port",
             10: "dont_have_piece",
+            11: "deny_unchoke",
+            12: "disconnect"
         }
 
         # Check for valid message ID
@@ -176,7 +184,10 @@ class MessageParser:
             return {"type": "port", "listen_port": listen_port}
         elif message_type == "dont_have_piece":
             return {"type": "dont_have_piece"}
-        
+        elif message_type == "deny_unchoke":
+            return {"type": "deny_unchoke"}
+        elif message_type == "disconnect":
+            return {"type": "disconnect"}
         else:
             # Messages like choke, unchoke, interested, not_interested
             return {"type": message_type}
