@@ -59,8 +59,6 @@ class Torrent:
         except FileNotFoundError as e:
             print(f"[ERROR] The file {torrent_file} was not found: {e}")
             torrent_data = {}
-        except bencodepy.bencode.BencodingError as e:
-            print(f"[ERROR] Failed to decode the .torrent file: {e}")
         except Exception as e:
             print(f"[ERROR] An unexpected error occurred: {e}")
 
