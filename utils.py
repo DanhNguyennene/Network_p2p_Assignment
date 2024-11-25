@@ -1,5 +1,5 @@
 from lib import *
-
+import socket
 
 def get_files_in_directory(directory):
     """Recursively gets all files in the directory."""
@@ -133,15 +133,17 @@ def generate_torrent(
 
     # print(f"Hash size: {len(torrent_info['info']['pieces'])}")
 
-
+def get_actual_ip():
+    """Retrieve the actual IP address of the machine"""
+    hostname = socket.gethostname()
+    return socket.gethostbyname(hostname)
 def generate_peer_info(num_peer):
     peer_info = {}
-
+    peer_ip = get_actual_ip()
     for i in range(num_peer):
         peer_id = generate_peer_id(f"A{i+1}")
-        peer_ip = "127.0.0.1"
         peer_port = 6881 + i
-        directory = f"peer_A{i+1}"
+        directory = f"peer_A{i+1}_{peer_ip}"
         files_directory = "TO_BE_SHARED"
 
         peer_info[peer_id] = {
@@ -152,9 +154,9 @@ def generate_peer_info(num_peer):
 
     return peer_info
 
-
+IP = "192.168.2.156"
 def generate_tracker_info():
-    tracker_info = {"url": "http://127.0.0.1:8000/"}
+    tracker_info = {"url": f"http://{IP}:8000/"}
 
     return tracker_info
 
