@@ -99,19 +99,30 @@ def generate_torrent(
         files.append(
             {
                 "length": file_length,
-                "path": relative_path,
+                "path": Path(relative_path).as_posix(),
             }
         )
     #  -------------------
+    sorted_files = sorted(files, key=lambda f: f["path"])
+
     # Create the torrent metadata
     torrent_info = {
         "announce": tracker_url,
         "info": {
             "piece_length": piece_size,
             "pieces": b"".join(pieces),
-            "name": os.path.basename(os.path.normpath(files_directory)),
-            "files": files,
+            "name": Path(files_directory).name,  # Consistent and cross-platform
+            "files": sorted_files,  # Files are sorted
         },
+    }
+
+    # Sort the outer dictionary keys for consistent ordering
+    torrent_info = {
+        key: torrent_info[key] if key != "info" else {
+            inner_key: torrent_info["info"][inner_key]
+            for inner_key in sorted(torrent_info["info"].keys())
+        }
+        for key in sorted(torrent_info.keys())
     }
 
     # Encode the metadata using Bencode
@@ -150,7 +161,7 @@ def generate_peer_info(num_peer):
         peer_info[peer_id] = {
             "address": (peer_ip, peer_port),
             "directory": directory,
-            "files_directory": os.path.join(directory, files_directory),
+            "files_directory": Path(os.path.join(directory, files_directory)).as_posix(),
         }
 
     return peer_info
