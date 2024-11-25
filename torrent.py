@@ -72,7 +72,7 @@ class Torrent:
 
             start = torrent_data.find(b"4:infod") + len("4:infod") - 1
             end = -1
-
+            print(torrent_data)
             return hashlib.sha1(torrent_data[start:end]).digest()
 
         except FileNotFoundError as e:

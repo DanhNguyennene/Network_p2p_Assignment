@@ -140,7 +140,8 @@ class Tracker:
             "`1" "Handle peer announcements." ""
             try:
                 data = request.get_json()
-                print(data)
+                # print(data)
+                # print(self.peers)
                 if not data or "info_hash" not in data:
                     return jsonify({"failure reason": "Missing required data"}), 400
 
@@ -150,7 +151,7 @@ class Tracker:
 
                 complete, incomplete = self._get_swarm_stats(data["info_hash"])
                 peers = self._get_peers(data["info_hash"])
-
+                print(self.peers)
                 response_data = {
                     "interval": 5,  # 2 minutes
                     "min interval": 0,
