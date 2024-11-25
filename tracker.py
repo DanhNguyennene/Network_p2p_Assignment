@@ -140,6 +140,7 @@ class Tracker:
             "`1" "Handle peer announcements." ""
             try:
                 data = request.get_json()
+                print(data)
                 if not data or "info_hash" not in data:
                     return jsonify({"failure reason": "Missing required data"}), 400
 

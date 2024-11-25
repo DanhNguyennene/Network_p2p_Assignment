@@ -119,6 +119,7 @@ def generate_torrent(
 
     # Write the .torrent file
     torrent_file_path = os.path.join(directory, f"{output_name}")
+    os.makedirs(os.path.dirname(torrent_file_path), exist_ok=True)
     with open(torrent_file_path, "wb") as f:
         f.write(encoded_torrent)
 

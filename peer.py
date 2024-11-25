@@ -110,8 +110,9 @@ class Peer:
     #     except request.RequestException as e:
     #         print(f"[ERROR] fetching data from tracker: {e}")
 
-    def start_server(self,timeout=100):
+    def start_server(self,timeout=100000):
         """Start the peer server to handle piece requests."""
+
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -427,7 +428,7 @@ class Peer:
         except Exception as e:
             print(f"[ERROR] Failed to connect to peer {peer_ip}:{peer_port}: {e}")
 
-    def download_piece(self, client_socket, peer_ip, peer_port,unchoke_retry=2):
+    def download_piece(self, client_socket, peer_ip, peer_port,unchoke_retry=5):
         """Download all pieces sequentially from a peer."""
         try:
 
