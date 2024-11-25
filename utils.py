@@ -91,7 +91,7 @@ def generate_torrent(
 
     # Process each file in the directory
     for relative_path, full_path in file_paths:
-        file_length = os.path.getsize(full_path)
+        file_length = os.path.getsize(Path(full_path).as_posix())
 
         # Calculate the pieces for the current file
         hash_piece = split_file(full_path, piece_size)
