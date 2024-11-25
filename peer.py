@@ -39,6 +39,7 @@ class Peer:
 
         self.executor = ThreadPoolExecutor(max_workers=10)
         self.shutdown_event = threading.Event()
+        self.download_event = threading.Event()
 
         self.tracker_url = torrent.tracker_url
         self.name = torrent.name
@@ -67,7 +68,7 @@ class Peer:
                 """Register with the tracker and get a list of peers."""
                 data = {
                     "info_hash": self.info_hash.hex(),
-                    "peer_id": self.id,
+                    "id": self.id,
                     "ip": self.ip,
                     "port": self.port,
                     "downloaded": self.downloaded,
@@ -75,9 +76,9 @@ class Peer:
                     "is_seeder": self.is_seeder,
                 }
 
-                print(
-                    f"[DEBUG] register_with_tracker() {self.id} Registering with tracker: {self.tracker_url + "announce"}"
-                )
+                # print(
+                #     f"[DEBUG] register_with_tracker() {self.id} Registering with tracker: {self.tracker_url + "announce"}"
+                # )
                 response = requests.get(self.tracker_url + "announce", json=data)
 
                 # Parse the reponse received from tracker
@@ -99,18 +100,7 @@ class Peer:
         except requests.RequestException as e:
             print(f"[ERROR] registering with tracker: {e}")
 
-    # def get_peers(self):
-    #     """Get the list of peers from the tracker"""
-    #     data = {
-    #         "info_hash": self.info_hash,
-    #     }
-    #     try:
-    #         response = requests.get(self.tracker_url + "get_peers", json=data)
-    #         return response.json()
-    #     except request.RequestException as e:
-    #         print(f"[ERROR] fetching data from tracker: {e}")
-
-    def start_server(self,timeout=100):
+    def start_server(self, timeout=100):
         """Start the peer server to handle piece requests."""
         try:
             self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -123,31 +113,25 @@ class Peer:
             )
 
             while not self.shutdown_event.is_set():
-                try:
-                    conn, addr = self.server_socket.accept()
-                    print(
-                        f"[DEBUG] start_server() {self.id} received {addr}", addr
-                    )  # block until receive a request
-                    self.executor.submit(
-                        self.handle_client, conn, addr
-                    )  # threading running the handle_client function
-                except socket.timeout:
-                    print(f"[DEBUG] start_server() {self.id} Timeout while waiting for connection")
+                conn, addr = self.server_socket.accept()
+                # print(
+                #     f"[DEBUG] start_server() {self.id} received {addr}", addr
+                # )
+                self.executor.submit(
+                    self._handle_client, conn, addr
+                )  # threading running the _handle_client function
         except Exception as e:
             print(f"Error in server: {e}")
         finally:
             self.server_socket.close()
-            self.shutdown_event.set()
-            self.executor.shutdown(wait=True)
-
 
     def start_clients(self):
         """Start client threads to connect to available peers and download pieces."""
-
+        timeout = 10
         try:
-            print(
-                f"[DEBUG] start_clients() {self.id} Starting client threads for P2P connections..."
-            )
+            # print(
+            #     f"[DEBUG] start_clients() {self.id} Starting client threads for P2P connections..."
+            # )
 
             # Set to track already connected peers
             connected_peers = set()
@@ -155,18 +139,20 @@ class Peer:
             while not self.shutdown_event.is_set():
 
                 if not self.available_peers:
-                    print(
-                        f"[DEBUG] start_clients() {self.id} No available peers. Waiting for updates..."
-                    )
+                    # print(
+                    #     f"[DEBUG] start_clients() {self.id} No available peers. Waiting for updates..."
+                    # )
                     time.sleep(self.interval)  # Wait for registering with tracker
                     continue
-                
+                else:
+                    start_time = time.time()
+
                 # Iterate over the list of available peers
                 for peer in self.available_peers:
-                
+                    peer_id = peer.get("id")
                     peer_ip = peer.get("ip")
                     peer_port = peer.get("port")
-                    peer_key = (peer_ip, peer_port)
+                    peer_key = (peer_id, peer_ip, peer_port)
 
                     if peer_key in connected_peers:
                         # Skip already connected peers
@@ -176,27 +162,29 @@ class Peer:
                         # Skip connecting to itself
                         continue
 
+                    if self.is_seeder:
+                        print("[INFO] Peer is a seeder, stop connecting...")
+                        return
+
                     # Mark the peer as connected
                     connected_peers.add(peer_key)
 
                     # Start a thread to handle the connection and download
-                    self.executor.submit(self._connect_and_download, peer_ip, peer_port)
-                    if self.is_seeder:
-                        break
+                    self.executor.submit(self._connect_download, peer_ip, peer_port)
+
+                    print("[INFO] Sucessfully connected to: ", end="")
+                    for peer_id, _, _ in connected_peers:
+                        print(f"{peer_id}", end=", ")
+                    print("\n")
+
                 # Sleep briefly to avoid busy-looping
-                time.sleep(self.interval)
 
         except Exception as e:
             print(f"[ERROR] start_clients() {self.id} Error in start_clients: {e}")
-        finally:
-            print(f"[INFO] start_clients() {self.id} Shutting down client threads...")
-            self.shutdown_event.set()
-            self.executor.shutdown(wait=True)
 
-
-    def handle_client(self, conn, addr):
+    def _handle_client(self, conn, addr):
         peer_id = addr
-        print(f"[DEBUG] handle_client() {self.id} Accept connection from {addr}")
+        print(f"[DEBUG] _handle_client() {self.id} Accept connection from {addr}")
 
         try:
 
@@ -257,9 +245,11 @@ class Peer:
                         peer_bitfield = data["bitfield"]
                         peer_bitfield = self.message_factory.bitfield(peer_bitfield)
                         print(
-                            f"[DEBUG] handle_client() {self.id} Received bitfield from {addr}"
+                            f"[DEBUG] _handle_client() {self.id} Received bitfield from {addr}"
                         )
-                        print(f"[DEBUG] handle_client() {self.id} bitfield: {peer_bitfield}")
+                        print(
+                            f"[DEBUG] _handle_client() {self.id} bitfield: {peer_bitfield}"
+                        )
                         self.download_queue.update_bitfield(peer_id, peer_bitfield)
                         continue
 
@@ -268,18 +258,17 @@ class Peer:
                         self.download_queue.add_interested_peer(peer_id)
                         if self.download_queue.unchoke_peer(peer_id):
                             print(
-                                f"[DEBUG] handle_client() {self.id} Unchoked peer at {addr}"
+                                f"[DEBUG] _handle_client() {self.id} Unchoked peer at {addr}"
                             )
                             unchoke_msg = self.message_factory.unchoke()
                             conn.sendall(unchoke_msg)
                         else:
                             print(
-                                f"[DEBUG] handle_client() {self.id} Can't Unchoked peer at {addr}"
+                                f"[DEBUG] _handle_client() {self.id} Can't Unchoked peer at {addr}"
                             )
                             deny_msg = self.message_factory.deny_unchoke()
                             conn.sendall(deny_msg)
                             continue
-                        
 
                     # Handle "uninterested" message
                     elif data["type"] == "uninterested":
@@ -294,7 +283,9 @@ class Peer:
                             data["begin"],
                             data["length"],
                         )
-                        if self.download_queue.capacity < len(self.download_queue.unchoked_peers):
+                        if self.download_queue.capacity < len(
+                            self.download_queue.unchoked_peers
+                        ):
 
                             deny_msg = self.message_factory.deny_unchoke()
                             conn.sendall(deny_msg)
@@ -304,7 +295,7 @@ class Peer:
                             peer_id, index, begin, length
                         ):
                             print(
-                                f"[DEBUG] handle_client() {self.id} added request for block {index} from peer {peer_id}"
+                                f"[DEBUG] _handle_client() {self.id} added request for block {index} from peer {peer_id}"
                             )
                             piece_data = self.piece_manager.get_piece(index)
 
@@ -316,18 +307,18 @@ class Peer:
                                 self.download_queue.mark_completed(
                                     peer_id, index, begin
                                 )
+                                self.update_upload_stats(len(piece_data))
                                 print(
-                                    f"[DEBUG] handle_client() {self.id} sent piece {index} to {addr}"
+                                    f"[DEBUG] _handle_client() {self.id} sent piece {index} to {addr}"
                                 )
                             else:
                                 print(
-                                    f"[DEBUG] handle_client() {self.id} piece {index} not found"
+                                    f"[DEBUG] _handle_client() {self.id} piece {index} not found"
                                 )
                                 piece_msg = self.message_factory.dont_have_piece()
                                 conn.sendall(piece_msg)
 
                                 # tạo ra một cái protocal nữa ở messgae thông báo là không có piêc đó để leecher nó hỏi piece kahcs
-
 
                     # Handle "piece" message
                     elif data["type"] == "piece":
@@ -377,7 +368,7 @@ class Peer:
             conn.close()
             self.download_queue.handle_disconnect(peer_id)
             time.sleep(1)
-            print(f"[DEBUG] handle_client {self.id} close connection with {addr}")
+            print(f"[DEBUG] _handle_client {self.id} close connection with {addr}")
 
     def get_missing_pieces_from_peer(self, peer_bitfield):
         """
@@ -407,27 +398,22 @@ class Peer:
             print(f"[ERROR] Error reading piece {index} from {self.shared_dir}: {e}")
             return b""
 
-    def _connect_and_download(self, peer_ip, peer_port):
-        """Handle the connection and download process for a single peer."""
+    def _connect_download(self, peer_ip, peer_port):
+        """Establish a connection with a peer but don't start downloading."""
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
                 client_socket.connect((peer_ip, peer_port))
-                print(
-                    f"[DEBUG] _connect_and_download() {self.id} Connected to peer at {peer_ip}:{peer_port}"
-                )
-                if self.is_seeder:
-                    print(
-                        f"[DEBUG] _connect_and_download() {self.id} Peer {peer_ip}:{peer_port} is a seeder"
-                    )
-                    return
-                # Perform the download process
-
-                self.download_piece(client_socket, peer_ip, peer_port)
-
+                # print(
+                #     f"[DEBUG] _connect_download() {self.id} Connected to peer at {peer_ip}:{peer_port}"
+                # )
+                while not self.shutdown_event.is_set():
+                    self.download_piece(client_socket, peer_ip, peer_port)
+                    break
+                time.sleep(1)  # Check periodically for the download command
         except Exception as e:
             print(f"[ERROR] Failed to connect to peer {peer_ip}:{peer_port}: {e}")
 
-    def download_piece(self, client_socket, peer_ip, peer_port,unchoke_retry=2):
+    def download_piece(self, client_socket, peer_ip, peer_port, unchoke_retry=2):
         """Download all pieces sequentially from a peer."""
         try:
 
@@ -470,8 +456,6 @@ class Peer:
             ##                        ##
             ############################
 
-
-
             # Recieve server unchoke
             while True:  # (maybe unnecessary)
                 # Send client interested
@@ -490,7 +474,7 @@ class Peer:
                 if data["type"] == "unchoke":
                     break
                 elif data["type"] == "deny_unchoke":
-                    unchoke_retry -=1
+                    unchoke_retry -= 1
                     print(
                         f"[DEBUG] download_piece() {self.id} Waiting for unchoke from ({peer_ip, peer_port}), Retry in 5 seconds"
                     )
@@ -538,6 +522,8 @@ class Peer:
                         self.download_queue.mark_completed(
                             peer_ip, piece_data["index"], 0
                         )  # (what does begin do)
+                        self.update_download_stats(len(piece_data["block"]))
+                        self._update_is_seeder()
                         print(
                             f"[INFO] Successfully downloaded piece {piece_data['index']}"
                         )
@@ -545,7 +531,7 @@ class Peer:
                         print(
                             f"[INFO] Peer {peer_ip} does not have the requested piece"
                         )
-                        missing_index+=1
+                        missing_index += 1
                         missing_piece = missing_piece[missing_index:]
 
                 except socket.timeout:
@@ -558,7 +544,6 @@ class Peer:
             self._update_is_seeder()
             client_socket.close()
             time.sleep(1)
-
 
     def save_piece(self, file_path, index, data):
         """Save a piece to the file."""
@@ -574,11 +559,25 @@ class Peer:
 
     def update_download_stats(self, bytes_downloaded):
         self.downloaded += bytes_downloaded
-        self.register_with_tracker()
 
     def update_upload_stats(self, bytes_uploaded):
         self.uploaded += bytes_uploaded
-        self.register_with_tracker()
+
+    def start_download(self):
+        """Trigger the start of the download process."""
+        if not self.download_event.is_set():
+            print(f"[INFO] {self.id} Starting the download process.")
+            self.download_event.set()
+        else:
+            print(f"[INFO] {self.id} Download process is already running.")
+
+    def stop_download(self):
+        """Trigger the stop of the download process."""
+        if self.download_event.is_set():
+            print(f"[INFO] {self.id} Stopping the download process.")
+            self.download_event.clear()  # Clear the event to stop the download
+        else:
+            print(f"[INFO] {self.id} Download process is not currently running.")
 
     def shutdown(self):
         self.shutdown_event.set()

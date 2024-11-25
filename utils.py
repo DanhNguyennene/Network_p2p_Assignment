@@ -134,7 +134,7 @@ def generate_torrent(
     # print(f"Hash size: {len(torrent_info['info']['pieces'])}")
 
 
-def generate_peer_info(num_peer):
+def generate_peer_infos(num_peer):
     peer_info = {}
 
     for i in range(num_peer):
@@ -145,12 +145,28 @@ def generate_peer_info(num_peer):
         files_directory = "TO_BE_SHARED"
 
         peer_info[peer_id] = {
+            "id": peer_id,
             "address": (peer_ip, peer_port),
             "directory": directory,
             "files_directory": os.path.join(directory, files_directory),
         }
 
     return peer_info
+
+
+def generate_peer_info(id, port, ip="127.0.0.1"):
+    peer_id = generate_peer_id(id)
+    peer_ip = ip
+    peer_port = port
+    directory = f"peer_{id}"
+    files_directory = "TO_BE_SHARED"
+
+    return {
+        "id": peer_id,
+        "address": (peer_ip, peer_port),
+        "directory": directory,
+        "files_directory": os.path.join(directory, files_directory),
+    }
 
 
 def generate_tracker_info():
@@ -160,9 +176,8 @@ def generate_tracker_info():
 
 
 def generate_peer_id(client_id, version_number="1000"):
-    if (
-        not any(c.isdigit() for c in client_id)
-        or not any(c.isalpha() for c in client_id)
+    if not any(c.isdigit() for c in client_id) or not any(
+        c.isalpha() for c in client_id
     ):
         raise ValueError("Client ID containing 2 letters or numbers")
 

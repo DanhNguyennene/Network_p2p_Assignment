@@ -86,9 +86,10 @@ class Network:
     def run(self):
         def start_p2p_connections(peer):
             peer.start_clients()
+
         # IMPORTANT: Wait for all peers to register with the tracker before starting P2P connections at least 5 seconds
         time.sleep(5)
-        print('self.peers:',self.peers)
+        print("self.peers:", self.peers)
         try:
             with ThreadPoolExecutor(max_workers=40) as executor:
                 futures = [
@@ -127,9 +128,9 @@ class Network:
 
 if __name__ == "__main__":
     # Number of peer in the network
-    num_peer =20
+    num_peer = 20
     # The peer peer_info can be specified by users are generated automatically
-    peer_infos = generate_peer_info(num_peer)
+    peer_infos = generate_peer_infos(num_peer)
     tracker_info = generate_tracker_info()
 
     network = Network(peer_infos, tracker_info)

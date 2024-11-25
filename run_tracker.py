@@ -32,7 +32,7 @@ class Tracker:
         Returns:
             bool: True if valid, False otherwise
         """
-        required_fields = ["peer_id", "ip", "port", "info_hash"]
+        required_fields = ["id", "ip", "port", "info_hash"]
         return all(field in data for field in required_fields)
 
     def _cleanup_inactive_peers(self, max_age_minutes: int = 30) -> None:
@@ -71,14 +71,14 @@ class Tracker:
                 print("Invalid peer data")
                 return False
 
-            peer_id = data["peer_id"]
+            peer_id = data["id"]
             info_hash = data["info_hash"]
 
             if info_hash not in self.peers:
                 self.peers[info_hash] = {}
-            
+
             self.peers[info_hash][peer_id] = {
-                "peer_id": peer_id,
+                "id": peer_id,
                 "ip": data["ip"],
                 "port": data["port"],
                 "downloaded": data.get("downloaded", 0),

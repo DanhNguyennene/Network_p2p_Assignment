@@ -74,7 +74,9 @@ class PieceManager:
             # Load files information
             if b"files" in torrent_data[b"info"]:
                 for file_info in torrent_data[b"info"][b"files"]:
-                    parent_dir = os.path.join(self.file_dir, torrent_data[b"info"][b"name"].decode())
+                    parent_dir = os.path.join(
+                        self.file_dir, torrent_data[b"info"][b"name"].decode()
+                    )
                     file_path = os.path.join(parent_dir, file_info[b"path"].decode())
                     self.files.append(
                         {"length": file_info[b"length"], "path": file_path}
