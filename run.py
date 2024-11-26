@@ -38,12 +38,12 @@ class Network:
         torrent_name = f"{shared_files_directory}.torrent"
         torrent_directory = "torrents"
         # Generate the torrent for the files in the 'files' subdirectory
-        generate_torrent(
-            torrent_directory,
-            shared_files_directory,
-            self.tracker_info["url"],
-            torrent_name,
-        )
+        # generate_torrent(
+        #     torrent_directory,
+        #     shared_files_directory,
+        #     self.tracker_info["url"],
+        #     torrent_name,
+        # )
 
         for peer_id, peer_info in self.peer_infos.items():
             torrent_path = os.path.join(torrent_directory, torrent_name)
