@@ -31,15 +31,15 @@ class PieceManager:
 
         Returns:
             dict: A dictionary where each key is an integer (piece index) and each value is a dictionary
-                with 'file' (filename) and 'length' (length of the piece).
+                with 'file' (filename), 'length' (length of the piece), and 'offset' (start position in the file).
 
-                {
-                    0: {"file": "file1.txt", "length": piece_length},
-                    1: {"file": "file1.txt", "length": piece_length},
-                    2: {"file": "file1.txt", "length": piece_length_of_last_chunk},
-                    3: {"file": "file2.txt", "length": piece_length},
-                    4: {"file": "file2.txt", "length": piece_length_of_last_chunk},
-                }
+                Example:
+                    {
+                        0: {"file": "file1.txt", "length": piece_length, "offset": 0},
+                        1: {"file": "file1.txt", "length": piece_length, "offset": piece_length},
+                        2: {"file": "file1.txt", "length": piece_length_of_last_chunk, "offset": some_offset},
+                        3: {"file": "file2.txt", "length": piece_length, "offset": 0},
+                    }
         """
         piece_index = 0
 
@@ -52,12 +52,20 @@ class PieceManager:
             while offset < file_length:
                 # Determine the length of the current piece
                 current_piece_length = min(self.piece_length, file_length - offset)
+
+                # Add the piece information to the dictionary
                 self.pieces_dict[piece_index] = {
                     "file": file_name,
                     "length": current_piece_length,
+                    "offset": offset,
                 }
+
+                # Move to the next piece
                 offset += current_piece_length
                 piece_index += 1
+
+        return self.pieces_dict
+
 
     def _load_torrent(self):
         """Load metadata from the .torrent file."""
