@@ -130,9 +130,20 @@ def get_actual_ip():
     """Retrieve the actual IP address of the machine"""
     hostname = socket.gethostname()
     return socket.gethostbyname(hostname)
+def get_external_ip():
+    """Automatically determine the external IP address of the machine."""
+    try:
+        # Create a dummy socket to determine the external IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Connect to a public DNS server
+        ip = s.getsockname()[0]  # Get the IP of the interface used
+        s.close()
+        return ip
+    except Exception as e:
+        return "127.0.0.1"
 def generate_peer_info(num_peer):
     peer_info = {}
-    peer_ip = get_actual_ip()
+    peer_ip = get_external_ip()
     for i in range(num_peer):
         peer_id = generate_peer_id(f"A{i+1}")
         peer_port = 6881 + i
@@ -146,17 +157,6 @@ def generate_peer_info(num_peer):
         }
 
     return peer_info
-def get_external_ip():
-    """Automatically determine the external IP address of the machine."""
-    try:
-        # Create a dummy socket to determine the external IP
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))  # Connect to a public DNS server
-        ip = s.getsockname()[0]  # Get the IP of the interface used
-        s.close()
-        return ip
-    except Exception as e:
-        return "127.0.0.1"
 def generate_tracker_info():
     tracker_info = {"url": f"http://{get_external_ip()}:8000/"}
 
