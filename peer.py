@@ -138,8 +138,6 @@ class Peer:
             print(f"Error in server: {e}")
         finally:
             self.server_socket.close()
-            self.shutdown_event.set()
-            self.executor.shutdown(wait=True)
 
 
     def start_clients(self):
@@ -179,11 +177,11 @@ class Peer:
 
                     # Mark the peer as connected
                     connected_peers.add(peer_key)
-
+                    if self.is_seeder:
+                        continue    
                     # Start a thread to handle the connection and download
                     self.executor.submit(self._connect_and_download, peer_ip, peer_port)
-                    if self.is_seeder:
-                        break
+
                 # Sleep briefly to avoid busy-looping
                 time.sleep(self.interval)
 
@@ -191,8 +189,6 @@ class Peer:
             print(f"[ERROR] start_clients() {self.id} Error in start_clients: {e}")
         finally:
             print(f"[INFO] start_clients() {self.id} Shutting down client threads...")
-            self.shutdown_event.set()
-            self.executor.shutdown(wait=True)
 
 
     def handle_client(self, conn, addr):

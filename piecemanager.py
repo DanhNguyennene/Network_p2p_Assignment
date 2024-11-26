@@ -20,6 +20,7 @@ class PieceManager:
         self.total_pieces = 0
         self.pieces_hash = []
         self.pieces_dict = {}
+        self.tdict = torrent_file.json_torrent
         self.files = []
         self._load_torrent()
         self._split_files_into_pieces()
@@ -31,17 +32,18 @@ class PieceManager:
 
         Returns:
             dict: A dictionary where each key is an integer (piece index) and each value is a dictionary
-                with 'file' (filename) and 'length' (length of the piece).
+                with 'file' (filename), 'length' (length of the piece), and 'offset' (start position in the file).
 
-                {
-                    0: {"file": "file1.txt", "length": piece_length},
-                    1: {"file": "file1.txt", "length": piece_length},
-                    2: {"file": "file1.txt", "length": piece_length_of_last_chunk},
-                    3: {"file": "file2.txt", "length": piece_length},
-                    4: {"file": "file2.txt", "length": piece_length_of_last_chunk},
-                }
+                Example:
+                    {
+                        0: {"file": "file1.txt", "length": piece_length, "offset": 0},
+                        1: {"file": "file1.txt", "length": piece_length, "offset": piece_length},
+                        2: {"file": "file1.txt", "length": piece_length_of_last_chunk, "offset": some_offset},
+                        3: {"file": "file2.txt", "length": piece_length, "offset": 0},
+                    }
         """
         piece_index = 0
+        self.pieces_dict = {}  # Initialize the pieces dictionary
 
         for file_info in self.files:
             file_name = file_info["path"]
@@ -52,12 +54,19 @@ class PieceManager:
             while offset < file_length:
                 # Determine the length of the current piece
                 current_piece_length = min(self.piece_length, file_length - offset)
+
+                # Add the piece information to the dictionary
                 self.pieces_dict[piece_index] = {
                     "file": file_name,
                     "length": current_piece_length,
+                    "offset": offset,
                 }
+
+                # Move to the next piece
                 offset += current_piece_length
                 piece_index += 1
+
+        return self.pieces_dict
 
     def _load_torrent(self):
         """Load metadata from the .torrent file."""
@@ -75,7 +84,7 @@ class PieceManager:
             if b"files" in torrent_data[b"info"]:
                 for file_info in torrent_data[b"info"][b"files"]:
                     parent_dir = os.path.join(self.file_dir, torrent_data[b"info"][b"name"].decode())
-                    file_path = os.path.join(parent_dir, file_info[b"path"][0].decode())
+                    file_path = os.path.join(parent_dir, file_info[b"path"][0].decode()).replace('\\', '/').replace('\\\\', '/')
                     self.files.append(
                         {"length": file_info[b"length"], "path": file_path}
                     )
@@ -231,35 +240,63 @@ class PieceManager:
         else:
             print(f"[DEBUG] Saved and verified piece {index}, length: {len(data)}")
 
-    def verify_piece(self, index):
+    def verify_piece(self, piece_index, base_path):
         """
-        Verify a specific piece by its index.
+        Verify a specific piece by its index in a multi-file torrent.
 
         Args:
-            index (int): The index of the piece to verify.
+            piece_index (int): The index of the piece to verify.
+            base_path (str): The base directory of the files included in the torrent.
 
         Returns:
-            bool: True if the piece is verified, False otherwise.
+            bool: True if the piece is verified successfully, False otherwise.
         """
-        # Retrieve the piece data using the existing get_piece() method
-        piece_data = self.get_piece(index)
-        if not piece_data:
-            print(f"[ERROR] Could not read piece {index}")
+        try:
+            # Get expected hash from torrent metadata
+            expected_hash = self.tdict['info']['pieces'][piece_index * 20:(piece_index + 1) * 20]
+
+            # Reconstruct the piece data from the files
+            piece_data = b""
+            piece_length_remaining = self.piece_length  # Start with the full piece length
+            piece_offset = piece_index * self.piece_length
+
+            for file_info in self.files:
+                file_path = os.path.join(base_path, *file_info["path"])
+                file_length = file_info["length"]
+
+                # Check if the piece starts in this file
+                if piece_offset >= file_length:
+                    # Skip this file as the piece starts after it ends
+                    piece_offset -= file_length
+                    continue
+
+                # Calculate how much data to read from this file
+                with open(file_path, "rb") as file:
+                    file.seek(piece_offset)  # Move to the start of the piece in the file
+                    bytes_to_read = min(piece_length_remaining, file_length - piece_offset)
+                    piece_data += file.read(bytes_to_read)
+
+                # Update the remaining piece length and reset the offset for subsequent files
+                piece_length_remaining -= bytes_to_read
+                piece_offset = 0
+
+                if piece_length_remaining <= 0:
+                    break
+
+            # Calculate the actual SHA-1 hash for the reconstructed piece
+            actual_hash = hashlib.sha1(piece_data).digest()
+
+            # Compare the actual hash with the expected hash
+            if actual_hash == expected_hash:
+                print(f"[INFO] Verified piece {piece_index} successfully.")
+                return True
+            else:
+                print(f"[ERROR] Verification failed for piece {piece_index}.")
+                return False
+
+        except Exception as e:
+            print(f"[ERROR] An error occurred during verification of piece {piece_index}: {str(e)}")
             return False
-
-        # Calculate the SHA-1 hash of the piece
-        expected_hash = self.pieces_hash[index * 20 : (index + 1) * 20]
-        actual_hash = hashlib.sha1(piece_data).digest()
-
-        # Compare the actual hash with the expected hash
-        if actual_hash == expected_hash:
-            self.mark_piece_completed(index)
-            print(f"[INFO] Verified piece {index} successfully.")
-            return True
-        else:
-            print(f"[ERROR] Verification failed for piece {index}.")
-            return False
-
     def mark_piece_completed(self, index):
         """Mark a specific piece as completed."""
         self.bitfield[index] = 1

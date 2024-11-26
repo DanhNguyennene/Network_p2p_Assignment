@@ -50,7 +50,7 @@ class Torrent:
                     self.files.append(
                         {
                             "length": file[b"length"],
-                            "path": file[b"path"][0].decode().replace('\\', '/'),
+                            "path": file[b"path"][0].decode().replace('\\', '/').replace('\\\\', '/'),
                         }
                     )
             except KeyError as e:
