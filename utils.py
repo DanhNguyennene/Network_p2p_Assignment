@@ -146,10 +146,19 @@ def generate_peer_info(num_peer):
         }
 
     return peer_info
-
-IP = "192.168.2.156"
+def get_external_ip():
+    """Automatically determine the external IP address of the machine."""
+    try:
+        # Create a dummy socket to determine the external IP
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))  # Connect to a public DNS server
+        ip = s.getsockname()[0]  # Get the IP of the interface used
+        s.close()
+        return ip
+    except Exception as e:
+        return "127.0.0.1"
 def generate_tracker_info():
-    tracker_info = {"url": f"http://{IP}:8000/"}
+    tracker_info = {"url": f"http://{get_external_ip()}:8000/"}
 
     return tracker_info
 

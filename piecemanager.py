@@ -65,7 +65,7 @@ class PieceManager:
             torrent_data = self.torrent_file.json_torrent
             print(f"[INFO] Loading torrent file: {torrent_data}")
             # Extract essential metadata
-            self.piece_length = torrent_data[b"info"][b"piece_length"]
+            self.piece_length = torrent_data[b"info"][b"piece length"]
             self.pieces_hash = torrent_data[b"info"][b"pieces"]
             self.total_pieces = (
                 len(self.pieces_hash) // 20
@@ -75,7 +75,7 @@ class PieceManager:
             if b"files" in torrent_data[b"info"]:
                 for file_info in torrent_data[b"info"][b"files"]:
                     parent_dir = os.path.join(self.file_dir, torrent_data[b"info"][b"name"].decode())
-                    file_path = os.path.join(parent_dir, file_info[b"path"].decode())
+                    file_path = os.path.join(parent_dir, file_info[b"path"][0].decode())
                     self.files.append(
                         {"length": file_info[b"length"], "path": file_path}
                     )

@@ -27,7 +27,7 @@ class Torrent:
                 print(f"[ERROR] Missing 'announce' key in torrent data: {e}")
                 self.tracker_url = ""
             try:
-                self.piece_length = torrent_data[b"info"][b"piece_length"]
+                self.piece_length = torrent_data[b"info"][b"piece length"]
             except KeyError as e:
                 print(f"[ERROR] Missing 'piece_length' key in torrent data: {e}")
                 self.piece_length = 0
@@ -50,7 +50,7 @@ class Torrent:
                     self.files.append(
                         {
                             "length": file[b"length"],
-                            "path": file[b"path"].decode(),
+                            "path": file[b"path"][0].decode(),
                         }
                     )
             except KeyError as e:
