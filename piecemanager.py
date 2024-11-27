@@ -75,6 +75,7 @@ class PieceManager:
             # Extract essential metadata
             self.piece_length = torrent_data[b"info"][b"piece length"]
             self.pieces_hash = torrent_data[b"info"][b"pieces"]
+            print(f"[INFO] Piece length: {self.piece_length}, Pieces hash: {self.pieces_hash}")
             self.total_pieces = (
                 len(self.pieces_hash) // 20
             )  # SHA1 hash size is 20 bytes
@@ -83,7 +84,8 @@ class PieceManager:
             if b"files" in torrent_data[b"info"]:
                 for file_info in torrent_data[b"info"][b"files"]:
                     parent_dir = os.path.join(self.file_dir, torrent_data[b"info"][b"name"].decode())
-                    file_path = os.path.join(parent_dir, file_info[b"path"][0].decode()).replace('\\', '/').replace('\\\\', '/')
+                    file_path = os.path.join(parent_dir, *[path.decode() for path in file_info[b"path"]])
+                    print(f"[INFO] File path: {file_path}")
                     self.files.append(
                         {"length": file_info[b"length"], "path": file_path}
                     )

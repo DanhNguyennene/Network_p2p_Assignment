@@ -65,14 +65,14 @@ class makeTorrent:
             raise TypeError('Cannot add multi-file to single-file torrent')
         if basePath.endswith('/'):
             basePath = basePath[:-1]
-        realPath = path.abspath(basePath)
+        realPath = path.abspath(basePath).replace('\\', '/').replace('\\\\', '/')
         toGet = []
         fileList = []
         info_pieces = b""
         data = b""
         for root, subdirs, files in walk(realPath):
             for f in files:
-                subPath = path.relpath(path.join(root, f), start=realPath).split('/')
+                subPath = path.relpath(path.join(root, f), start=realPath).replace('\\', '/').replace('\\\\', '/').split('/')
                 subPath = [str(p) for p in subPath]
                 toGet.append(subPath)
         for pathList in toGet:
@@ -153,7 +153,7 @@ class makeTorrent:
             {
                 'length': length,
                 'pieces': info_pieces,
-                'name': str(path.basename(realPath))
+                'name': str(path.basename(realPath)).replace('\\', '/').replace('\\\\', '/')
             }
         )
         if check_md5:
