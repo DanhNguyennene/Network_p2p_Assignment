@@ -20,51 +20,134 @@ class PieceManager:
         self.total_pieces = 0
         self.pieces_hash = []
         self.pieces_dict = {}
+        self.pieces_dict_origin = {}
+        self.local_pieces_dict = {}
         self.files = []
         self._load_torrent()
-        self._split_files_into_pieces()
+        self._map_pieces_to_files()
+        self._map_local_pieces_to_files()   
         self._initialize_bitfield()
-
-    def _split_files_into_pieces(self):
+    def _map_pieces_to_files(self):
         """
-        Split each file in self.files into pieces based on self.piece_length.
-
-        Returns:
-            dict: A dictionary where each key is an integer (piece index) and each value is a dictionary
-                with 'file' (filename), 'length' (length of the piece), and 'offset' (start position in the file).
-
-                Example:
-                    {
-                        0: {"file": "file1.txt", "length": piece_length, "offset": 0},
-                        1: {"file": "file1.txt", "length": piece_length, "offset": piece_length},
-                        2: {"file": "file1.txt", "length": piece_length_of_last_chunk, "offset": some_offset},
-                        3: {"file": "file2.txt", "length": piece_length, "offset": 0},
-                    }
+        Map torrent pieces to their original files, tracking the file, length, and offset 
+        for each piece across multiple files.
         """
-        piece_index = 0
+        piece_length = self.piece_length
+        self.pieces_dict_origin = {}
 
-        for file_info in self.files:
-            file_name = file_info["path"]
-            file_length = file_info["length"]
-            offset = 0
+        file_index = 0
+        file_offset = 0
+        
+        for piece_index in range(self.total_pieces):
+            # Reset piece-specific tracking for each piece
+            piece_remaining = piece_length
+            piece_origins = []
 
-            # Split the file into pieces of size self.piece_length
-            while offset < file_length:
-                # Determine the length of the current piece
-                current_piece_length = min(self.piece_length, file_length - offset)
+            # Continue until we've filled the entire piece
+            while piece_remaining > 0 and file_index < len(self.files):
+                current_file = self.files[file_index]
+                file_name = current_file["path"]
+                file_length = current_file["length"]
 
-                # Add the piece information to the dictionary
-                self.pieces_dict[piece_index] = {
-                    "file": file_name,
-                    "length": current_piece_length,
-                    "offset": offset,
-                }
+                # Calculate how much we can take from the current file
+                available_in_file = file_length - file_offset
+                take_from_file = min(piece_remaining, available_in_file)
 
-                # Move to the next piece
-                offset += current_piece_length
-                piece_index += 1
+                if take_from_file > 0:
+                    # Add file contribution to this piece
+                    piece_origins.append({
+                        "file": file_name,
+                        "length": take_from_file,
+                        "offset": file_offset,
+                    })
 
-        return self.pieces_dict
+                    # Update tracking variables
+                    piece_remaining -= take_from_file
+                    file_offset += take_from_file
+
+                # Move to next file if current file is exhausted
+                if file_offset >= file_length:
+                    file_index += 1
+                    file_offset = 0
+
+            # Store the piece origins
+            self.pieces_dict_origin[piece_index] = piece_origins
+
+        print(f"[INFO] Mapped {self.total_pieces} pieces to their origin files.")
+        return self.pieces_dict_origin
+    def _map_local_pieces_to_files(self):
+        """
+        Maps local pieces to their origin files, tracking the file, length, and offset 
+        for each piece across multiple local files.
+        """
+        piece_length = self.piece_length
+        self.local_pieces_dict = {}
+
+        file_index = 0
+        file_offset = 0
+        
+        for piece_index in range(self.total_pieces):
+            # Reset piece-specific tracking for each piece
+            piece_remaining = piece_length
+            piece_origins = []
+            if not os.path.exists(self.files[file_index]["path"]):
+                print(f"[ERROR] File {self.files[file_index]["path"]} does not exist.Skipping piece {piece_index}.")
+                if file_index+1 < len(self.files):
+                    file_offset += self.pieces_dict_origin[piece_index+1][0]['offset']
+                    file_index+=1
+                    continue    
+                else:
+                    print(f"[ERROR] File {self.files[file_index]["path"]} does not exist.Skipping piece {piece_index}.")
+                    break
+
+            # Continue until we've filled the entire piece
+            piece_data = b""
+            while piece_remaining > 0 and file_index < len(self.files):
+                current_file = self.files[file_index]
+                file_name = current_file["path"]
+                file_length = current_file["length"]
+
+                # Calculate how much we can take from the current file
+                available_in_file = file_length - file_offset
+                take_from_file = min(piece_remaining, available_in_file)
+
+                piece_remaining -= take_from_file
+                if take_from_file > 0:
+                    # Open the file and read the piece
+                    with open(file_name, 'rb') as file:
+                        file.seek(file_offset)
+                        piece_data += file.read(take_from_file)
+                        if piece_data and piece_remaining == 0:
+                            expected_hash = self.pieces_hash[piece_index * 20 : (piece_index + 1) * 20]
+                            actual_hash = hashlib.sha1(piece_data).digest()
+                            if actual_hash != expected_hash:
+                                print(f"[ERROR] Piece {piece_index} is corrupted. Skipping.")
+                                # remove the last file contribution
+                                piece_origins.pop()
+                                file_offset += self.pieces_dict_origin[piece_index+1][0]['offset']
+                                continue
+                    # Add file contribution to this piece
+                    piece_origins.append({
+                        "file": file_name,
+                        "length": take_from_file,
+                        "offset": file_offset,
+                    })
+
+                    # Update tracking variables
+                    file_offset += take_from_file
+
+                # Move to next file if current file is exhausted
+                if file_offset >= file_length:
+                    file_index += 1
+                    file_offset = 0
+
+            # Store the piece origins
+            self.local_pieces_dict[piece_index] = piece_origins
+
+        print(f"[INFO] Mapped {self.total_pieces} local pieces to their origin files.")
+        return self.local_pieces_dict
+
+
 
 
     def _load_torrent(self):
@@ -128,8 +211,8 @@ class PieceManager:
 
     def get_piece(self, index):
         """
-        Retrieve a piece by its index, handling multiple files if necessary.
-
+        Retrieve a piece by its index, handling multiple files and file offsets.
+        
         Args:
             index (int): The index of the piece to retrieve.
 
@@ -137,53 +220,44 @@ class PieceManager:
             bytes: The data for the requested piece, or None if an error occurs.
         """
         try:
-            # Retrieve the file and piece length information from the pieces dictionary
-            piece_info = self.pieces_dict.get(index)
-            if piece_info is None:
-                print(f"[ERROR] get_piece() Piece index {index} does not exist.")
+            # Retrieve the piece information from the local_pieces_dict
+            piece_info = self.local_pieces_dict.get(index)
+            if not piece_info:
+                print(f"[ERROR] get_piece() - Piece {index} not found in local_pieces_dict.")
                 return None
 
-            file_path = piece_info["file"]
-            print(
-                f"[DEBUG] get_piece() Retrieving piece {index} from file: {file_path}"
-            )
-            piece_length = piece_info["length"]
 
-            # Open the file in binary read mode
-            if not os.path.exists(file_path):
-                print(f"[DEBUG] get_piece() File {file_path} is yet yo be exist.")
+            piece_data = b""
+            if not piece_info:
+                print(f"[ERROR] get_piece() - Piece {index} not found in local_pieces_dict.")
                 return None
-            with open(file_path, "rb") as file:
-                # Calculate the start position for the piece within the file.
-                # If it's a new file, start from 0; otherwise, use the index.
-                start_index = 0
-                for idx, info in self.pieces_dict.items():
-                    if idx == index:
-                        break
-                    if info["file"] == file_path:
-                        start_index += 1
-                    else:
-                        start_index = 0
+            for file_info in piece_info:
+                file_path = file_info["file"]
+                file_length = file_info["length"]
+                offset = file_info["offset"]
+                
+                if not os.path.exists(file_path):
+                    print(f"[ERROR] get_piece() - File {file_path} does not exist.")
+                    return None  # If any file doesn't exist, return None for the whole piece
 
-                # Calculate the start position of the piece within the file
-                start = start_index * self.piece_length
-                file.seek(start)
 
-                # Read the exact length of the piece
-                piece_data = file.read(piece_length)
+                with open(file_path, "rb") as file:
+                    file.seek(offset)
 
-                # Verify that the retrieved piece is the correct size
-                if len(piece_data) != piece_length:
-                    print(
-                        f"[ERROR] Incomplete piece {index}. Expected {piece_length} bytes, got {len(piece_data)} bytes."
-                    )
-                    return None
+                    # Calculate how much data we can read from this file
+
+                    data = file.read(file_length)
+
+                    # Add the data to the cumulative piece data
+                    piece_data += data
 
             return piece_data
 
         except Exception as e:
-            print(f"[ERROR] An error occurred while retrieving piece {index}: {e}")
+            print(f"[ERROR] get_piece() - Error occurred while retrieving piece {index}: {e}")
             return None
+
+
 
     def save_piece(self, index, data):
         """
@@ -193,52 +267,55 @@ class PieceManager:
             index (int): The index of the piece.
             data (bytes): The data to save.
         """
-        # Retrieve the piece info from the pieces dictionary
-        piece_info = self.pieces_dict.get(index)
+        # Retrieve the piece info from the local_pieces_dict
+        piece_info = self.local_pieces_dict.get(index)
         if piece_info is None:
-            print(f"[ERROR] Piece index {index} does not exist.")
+            print(f"[ERROR] Piece index {index} does not exist in local_pieces_dict.")
             return
 
-        file_path = piece_info["file"]
-        piece_length = piece_info["length"]
-        # Ensure the directory for the file exists
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # Iterate over the list of file information for the piece
+        for file_info in piece_info:
+            file_path = file_info["file"]
+            piece_length = file_info["length"]
+            offset = file_info["offset"]
 
-        # Find the total size of the file associated with this piece
-        file_size = None
-        for file_info in self.files:
-            if file_info["path"] == file_path:
-                file_size = file_info["length"]
+            # Ensure the directory for the file exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+
+            # Find the total size of the file associated with this piece
+            file_size = None
+            for file_data in self.files:
+                if file_data["path"] == file_path:
+                    file_size = file_data["length"]
+                    break
+
+            # If the file doesn't exist, create it and set its size
+            if not os.path.exists(file_path):
+                with open(file_path, "wb") as f:
+                    if file_size is not None:
+                        f.truncate(file_size)
+
+            # Open the file in read and write binary mode
+            with open(file_path, "r+b") as file:
+                # Move to the correct starting position within the file
+                file.seek(offset)
+
+                # Write the data to the correct position in the file
+                data_to_write = data[:piece_length]
+                file.write(data_to_write)
+
+                # Remove the written part from the data
+                data = data[piece_length:]
+
+            # After writing, if all data has been written, break out of the loop
+            if len(data) == 0:
                 break
 
-        if not os.path.exists(file_path):
-            with open(file_path, "wb") as f:
-                if file_size is not None:
-                    f.truncate(file_size)
-
-        # Open the file in read and write binary mode
-        with open(file_path, "r+b") as file:
-            # Calculate the correct start position within the file
-            start_index = 0
-            for idx, info in self.pieces_dict.items():
-                if idx == index:
-                    break
-                if info["file"] == file_path:
-                    start_index += 1
-                else:
-                    start_index = 0
-
-            # Move to the correct starting position and write the data
-            start = start_index * self.piece_length
-            file.seek(start)
-
-            file.write(data[:piece_length])
-
-        # Mark as complete and verify
-        # self.mark_piece_completed(index)
+        # Mark as complete and verify the saved piece
         if not self.verify_piece(index):
             print(f"[ERROR] Piece {index} failed verification after saving.")
         else:
+            self._map_local_pieces_to_files()
             print(f"[DEBUG] Saved and verified piece {index}, length: {len(data)}")
 
     def verify_piece(self, index):
@@ -258,7 +335,7 @@ class PieceManager:
             return False
 
         # Calculate the SHA-1 hash of the piece
-        expected_hash = self.pieces_hash[index * 20 : (index + 1) * 20]
+        expected_hash = self.pieces_hash[index * 20 : (index + 1) * 20]  # Assuming 20-byte hashes
         actual_hash = hashlib.sha1(piece_data).digest()
 
         # Compare the actual hash with the expected hash
