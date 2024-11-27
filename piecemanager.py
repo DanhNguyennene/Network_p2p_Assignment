@@ -92,7 +92,7 @@ class PieceManager:
             piece_origins = []
             if not os.path.exists(self.files[file_index]["path"]):
                 print(f"[ERROR] File {self.files[file_index]["path"]} does not exist.Skipping piece {piece_index}.")
-                if file_index+1 < len(self.files):
+                if piece_index+1 < self.total_pieces:
                     file_offset += self.pieces_dict_origin[piece_index+1][0]['offset']
                     file_index+=1
                     continue    
@@ -105,6 +105,8 @@ class PieceManager:
             while piece_remaining > 0 and file_index < len(self.files):
                 current_file = self.files[file_index]
                 file_name = current_file["path"]
+                if not os.path.exists(self.files[file_index]["path"]):
+                    break
                 file_length = current_file["length"]
 
                 # Calculate how much we can take from the current file
@@ -123,7 +125,8 @@ class PieceManager:
                             if actual_hash != expected_hash:
                                 print(f"[ERROR] Piece {piece_index} is corrupted. Skipping.")
                                 # remove the last file contribution
-                                piece_origins.pop()
+                                if len(piece_origins) > 0:
+                                    piece_origins.pop()
                                 file_offset += self.pieces_dict_origin[piece_index+1][0]['offset']
                                 continue
                     # Add file contribution to this piece
@@ -268,7 +271,7 @@ class PieceManager:
             data (bytes): The data to save.
         """
         # Retrieve the piece info from the local_pieces_dict
-        piece_info = self.local_pieces_dict.get(index)
+        piece_info = self.pieces_dict_origin.get(index)
         if piece_info is None:
             print(f"[ERROR] Piece index {index} does not exist in local_pieces_dict.")
             return
@@ -310,12 +313,12 @@ class PieceManager:
             # After writing, if all data has been written, break out of the loop
             if len(data) == 0:
                 break
+        self._map_local_pieces_to_files()
 
         # Mark as complete and verify the saved piece
         if not self.verify_piece(index):
             print(f"[ERROR] Piece {index} failed verification after saving.")
         else:
-            self._map_local_pieces_to_files()
             print(f"[DEBUG] Saved and verified piece {index}, length: {len(data)}")
 
     def verify_piece(self, index):

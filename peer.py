@@ -529,12 +529,11 @@ class Peer:
 
                     piece_data = self.message_parser.parse_message(response)
                     if piece_data["type"] == "piece":
+                        print("Saving piece")
                         self.piece_manager.save_piece(
                             piece_data["index"], piece_data["block"]
                         )
-                        self.download_queue.mark_completed(
-                            peer_ip, piece_data["index"], 0
-                        )  # (what does begin do)
+                        self.piece_manager.mark_piece_completed(piece_data["index"])
                         print(
                             f"[INFO] Successfully downloaded piece {piece_data['index']}"
                         )

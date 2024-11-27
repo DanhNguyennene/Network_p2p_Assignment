@@ -153,6 +153,7 @@ class MessageParser:
 
         # Check for valid message ID
         if message_id not in message_map:
+            print(f"Unknown message ID: {message_id}")
             raise ValueError("Unknown message ID")
 
         message_type = message_map[message_id]

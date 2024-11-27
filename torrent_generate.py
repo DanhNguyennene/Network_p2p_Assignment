@@ -17,7 +17,7 @@ class makeTorrent:
       name: based on filename or path
       technical info: generates when a single or multi file is added
     """
-    def __init__(self, announce, piece_length=262144, **kw):
+    def __init__(self, announce, piece_length=1024*512, **kw):
         self.piece_length = piece_length
         if not bool(urlparse(announce).scheme):
             raise ValueError('No schema present for url')
