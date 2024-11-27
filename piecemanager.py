@@ -79,6 +79,14 @@ class PieceManager:
         """
         Maps local pieces to their origin files, tracking the file, length, and offset 
         for each piece across multiple local files.
+        5 piece, mot so file, 1 piêc sẽ map qua các file, ánh xạ 1-n
+        1- file1, file2
+        2- file2 (continue), file3
+        sẽ có ofset để biết đọc từ đâu
+        piece leng mặc định là 512kb = 1024*512
+        sẽ có file bị segment, lỗi, nó sẽ skip cái piece đó lun
+        đó, mất file r, nó skip piêc lun
+        ví dụ sai file , nó sẽ hash để so sánh, nếu sai nó skip lun
         """
         piece_length = self.piece_length
         self.local_pieces_dict = {}
@@ -90,6 +98,9 @@ class PieceManager:
             # Reset piece-specific tracking for each piece
             piece_remaining = piece_length
             piece_origins = []
+            if file_index >= len(self.files):
+                print(f"[ERROR] No more files available. Skipping piece {piece_index}.")
+                break
             if not os.path.exists(self.files[file_index]["path"]):
                 print(f"[ERROR] File {self.files[file_index]["path"]} does not exist.Skipping piece {piece_index}.")
                 if piece_index+1 < self.total_pieces:
@@ -115,6 +126,13 @@ class PieceManager:
 
                 piece_remaining -= take_from_file
                 if take_from_file > 0:
+                    # Add file contribution to this piece
+                    piece_origins.append({
+                        "file": file_name,
+                        "length": take_from_file,
+                        "offset": file_offset,
+                    })
+
                     # Open the file and read the piece
                     with open(file_name, 'rb') as file:
                         file.seek(file_offset)
@@ -129,12 +147,6 @@ class PieceManager:
                                     piece_origins.pop()
                                 file_offset += self.pieces_dict_origin[piece_index+1][0]['offset']
                                 continue
-                    # Add file contribution to this piece
-                    piece_origins.append({
-                        "file": file_name,
-                        "length": take_from_file,
-                        "offset": file_offset,
-                    })
 
                     # Update tracking variables
                     file_offset += take_from_file
