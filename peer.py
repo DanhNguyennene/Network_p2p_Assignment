@@ -519,6 +519,7 @@ class Peer:
                 index, begin = missing_piece[missing_index], 0
                 request_msg = self.message_factory.request(index, begin, 512 * 1024)
                 client_socket.sendall(request_msg)
+                time.sleep(0.5)  
 
                 # Step 5: Receive the requested piece
                 try:
