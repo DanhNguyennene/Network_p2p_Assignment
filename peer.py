@@ -522,7 +522,7 @@ class Peer:
 
                 # Step 5: Receive the requested piece
                 try:
-                    response = client_socket.recv(1024 + 512 * 1024)
+                    response = client_socket.recv(1024 * 1024)
                     if not response:
                         print("[ERROR] No response received. Retrying...")
                         continue
