@@ -519,11 +519,26 @@ class Peer:
                 index, begin = missing_piece[missing_index], 0
                 request_msg = self.message_factory.request(index, begin, 512 * 1024)
                 client_socket.sendall(request_msg)
-                time.sleep(0.5)  
 
                 # Step 5: Receive the requested piece
                 try:
-                    response = client_socket.recv(1024 * 1024)
+                    def recv_all(sock, length):
+                        """Utility function to receive a specific number of bytes from the socket."""
+                        data = b""
+                        while len(data) < length:
+                            usual_len = len(data)
+                            packet = sock.recv(length - len(data))
+                            if not packet:
+                                return None  # Connection closed unexpectedly
+                            data += packet
+                        usual_len = len(data)
+                        print(usual_len)
+                        return data
+
+                    # Usage:
+                    expected_length = 13 + self.piece_manager.get_piece_length(index)
+                    response = recv_all(client_socket, expected_length)
+
                     if not response:
                         print("[ERROR] No response received. Retrying...")
                         continue

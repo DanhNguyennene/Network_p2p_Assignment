@@ -202,7 +202,9 @@ class PieceManager:
             if self.is_piece_complete(index):
                 self.bitfield[index] = 1
                 self.completed_pieces.add(index)
-
+    def get_piece_length(self,index):
+        """Get the length of each piece."""
+        return sum(self.pieces_dict_origin[index][i]['length'] for i in range(len(self.pieces_dict_origin[index])))
     def is_piece_complete(self, index):
         """Check if a specific piece is already downloaded."""
         piece_data = self.get_piece(index)
