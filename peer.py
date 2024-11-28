@@ -291,6 +291,21 @@ class Peer:
                             data["begin"],
                             data["length"],
                         )
+                        piece_data = self.piece_manager.get_piece(index)
+                        if piece_data:
+                            have_piece = self.message_factory.have(index)
+                            conn.sendall(have_piece)
+                            print(f"[DEBUG] handle_client() {self.id} have piece {index} ")
+                        else:
+                            print(f"[DEBUG] handle_client() {self.id} piece {index} not found")
+                            piece_msg = self.message_factory.dont_have_piece()
+                            conn.sendall(piece_msg)
+                    elif data["type"] == "start_get_pieces":
+                        index, begin, length = (
+                            data["index"],
+                            data["begin"],
+                            data["length"],
+                        )
                         if self.download_queue.capacity < len(self.download_queue.unchoked_peers):
 
                             deny_msg = self.message_factory.deny_unchoke()
@@ -501,6 +516,7 @@ class Peer:
             ##                      ##
             ##########################
             missing_index = 0
+            
             while True:
 
                 missing_piece = self.piece_manager.get_next_missing_piece()
@@ -510,50 +526,57 @@ class Peer:
                     print("[INFO] All pieces have been downloaded.")
                     break
                 if missing_index >= len(missing_piece):
-                    break
+                    time.sleep(2)
+                    continue
                 print(
                     f"[DEBUG] download_piece() {self.id} requesting piece {missing_piece[0]} from ({peer_ip},{peer_port})"
                 )
 
                 # Request the next missing piece
                 index, begin = missing_piece[missing_index], 0
-                request_msg = self.message_factory.request(index, begin, 512 * 1024)
+                request_msg = self.message_factory.request(index, begin, self.piece_length)
                 client_socket.sendall(request_msg)
 
                 # Step 5: Receive the requested piece
                 try:
-                    def recv_all(sock, length):
-                        """Utility function to receive a specific number of bytes from the socket."""
-                        data = b""
-                        while len(data) < length:
-                            usual_len = len(data)
-                            packet = sock.recv(length - len(data))
-                            if not packet:
-                                return None  # Connection closed unexpectedly
-                            data += packet
-                        usual_len = len(data)
-                        print(usual_len)
-                        return data
-
-                    # Usage:
-                    expected_length = 13 + self.piece_manager.get_piece_length(index)
-                    response = recv_all(client_socket, expected_length)
+                    response = client_socket.recv(1024)
+                    
+                    piece_data = self.message_parser.parse_message(response)
 
                     if not response:
                         print("[ERROR] No response received. Retrying...")
                         continue
 
-                    piece_data = self.message_parser.parse_message(response)
-                    if piece_data["type"] == "piece":
+                    if piece_data["type"] == "have":
+                        ack_msg = self.message_factory.start_get_pieces(index, begin, self.piece_length)
+                        client_socket.sendall(ack_msg)
+                        def recv_all(sock, length):
+                            """Utility function to receive a specific number of bytes from the socket."""
+                            data = b""
+                            while len(data) < length:
+                                usual_len = len(data)
+                                packet = sock.recv(length - len(data))
+                                if not packet:
+                                    return None  # Connection closed unexpectedly
+                                data += packet
+                            usual_len = len(data)
+                            print(usual_len)
+                            return data
+
+                        # Usage:
+                        expected_length = 13 + self.piece_manager.get_piece_length(index)
+                        response = recv_all(client_socket, expected_length)
+                        piece_data = self.message_parser.parse_message(response)
                         print("Saving piece")
                         self.piece_manager.save_piece(
                             piece_data["index"], piece_data["block"]
                         )
                         self.piece_manager.mark_piece_completed(piece_data["index"])
+
                         print(
                             f"[INFO] Successfully downloaded piece {piece_data['index']}"
                         )
-                    elif piece_data["type"] == "dont_have_piece":
+                    if piece_data["type"] == "dont_have_piece":
                         print(
                             f"[INFO] Peer {peer_ip} does not have the requested piece"
                         )

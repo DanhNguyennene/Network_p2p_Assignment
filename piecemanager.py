@@ -368,6 +368,7 @@ class PieceManager:
         """Mark a specific piece as completed."""
         self.bitfield[index] = 1
         self.completed_pieces.add(index)
+        self._map_local_pieces_to_files()
         print(f"[INFO] Piece {index} marked as completed")
 
     def verify_all_pieces(self):

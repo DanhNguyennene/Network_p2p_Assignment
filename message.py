@@ -98,6 +98,13 @@ class MessageFactory:
         return struct.pack(
             "!IBH", 3, 9, listen_port
         )  # Length prefix of 3, ID of 9, port
+    @staticmethod
+    def start_get_pieces(index, begin, length):
+        """Start_get_pieces message: <len=0001><id=13>"""
+        return struct.pack(
+            "!IBIII", 13, 13, index, begin, length
+        )  # Length prefix of 13, ID of 6
+
 
 
 class MessageParser:
@@ -148,7 +155,8 @@ class MessageParser:
             9: "port",
             10: "dont_have_piece",
             11: "deny_unchoke",
-            12: "disconnect"
+            12: "disconnect",
+            13: "start_get_pieces",
         }
 
         # Check for valid message ID
@@ -166,7 +174,9 @@ class MessageParser:
 
         elif message_type == "bitfield":
             return {"type": "bitfield", "bitfield": payload}
-
+        elif message_type == "start_get_pieces":
+            index, begin, length = struct.unpack("!III", payload)
+            return {"type": "start_get_pieces", "index": index, "begin": begin, "length": length}
         elif message_type == "request":
             index, begin, length = struct.unpack("!III", payload)
             return {"type": "request", "index": index, "begin": begin, "length": length}

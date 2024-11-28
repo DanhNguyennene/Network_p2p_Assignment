@@ -127,7 +127,7 @@ class Network:
 
 if __name__ == "__main__":
     # Number of peer in the network
-    num_peer =1
+    num_peer =2
     # The peer peer_info can be specified by users are generated automatically
     peer_infos = generate_peer_info(num_peer)
     tracker_info = generate_tracker_info()
