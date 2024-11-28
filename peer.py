@@ -144,6 +144,7 @@ class Peer:
         """Start client threads to connect to available peers and download pieces."""
 
         try:
+            #avoid same ip
             print(
                 f"[DEBUG] start_clients() {self.id} Starting client threads for P2P connections..."
             )
@@ -165,7 +166,11 @@ class Peer:
                 
                     peer_ip = peer.get("ip")
                     peer_port = peer.get("port")
-                    peer_key = (peer_ip, peer_port)
+                    #avoid same ip
+                    if peer_ip == self.ip:
+                        continue
+                    # peer_key = (peer_ip, peer_port)
+                    peer_key = peer_ip
 
                     if peer_key in connected_peers:
                         # Skip already connected peers

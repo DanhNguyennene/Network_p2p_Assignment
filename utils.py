@@ -141,22 +141,20 @@ def get_external_ip():
         return ip
     except Exception as e:
         return "127.0.0.1"
-def generate_peer_info(num_peer):
+def generate_peer_info(num_peer,peer_port):
     peer_info = {}
     peer_ip = get_external_ip()
-    for i in range(num_peer):
-        peer_id = generate_peer_id(f"A{i+1}")
-        peer_port = 6881 + i
-        directory = f"peer_A{i+1}_{peer_ip}"
-        files_directory = "TO_BE_SHARED"
+    peer_id = generate_peer_id(f"A{peer_port}")
+    directory = f"peer_A{peer_port}_{peer_ip}"
+    files_directory = "TO_BE_SHARED"
 
-        peer_info[peer_id] = {
-            "address": (peer_ip, peer_port),
-            "directory": directory,
-            "files_directory": Path(os.path.join(directory, files_directory)).as_posix(),
-        }
+    peer_info = {
+        "address": (peer_ip, peer_port),
+        "directory": directory,
+        "files_directory": Path(os.path.join(directory, files_directory)).as_posix(),
+    }
 
-    return peer_info
+    return peer_info, peer_id
 def generate_tracker_info():
     tracker_info = {"url": f"http://{get_external_ip()}:8000/"}
 

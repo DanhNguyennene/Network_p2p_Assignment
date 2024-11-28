@@ -5,7 +5,7 @@ from peer import Peer
 
 
 class Network:
-    def __init__(self, peer_infos, tracker_info):
+    def __init__(self):
         """
         peer_info:
         {
@@ -25,18 +25,30 @@ class Network:
         }
         """
 
-        self.num_peer = len(peer_infos)
-        self.peer_infos = peer_infos
-        self.tracker_info = tracker_info
+        self.num_peer = 0
+
+        self.peer_infos = {}
+        # self.tracker_info = tracker_info
 
         self.peers = []
         self.peer_servers = []
         self.connection_with_trackers = []
+        self.shared_files_directory = []
+        self.torrent_taken = set()
+        self.peer_port = []
 
+    def update_torrent(self,torrent_paths):
+        self.shared_files_directory = [torrent_path for torrent_path in torrent_paths if torrent_path not in self.torrent_taken]
+        self.torrent_taken.update(self.shared_files_directory)
+        self.num_peer = len(torrent_paths)
+        for i in range(self.num_peer):
+            self.peer_port.append(self.peer_port[-1] + +1) if self.peer_port else self.peer_port.append(6881)
+            peer_info, peer_id = generate_peer_info(i,self.peer_port[-1])
+            self.peer_infos[peer_id] = peer_info
     def setup(self):
-        shared_files_directory = r"TO_BE_SHARED"
-        torrent_name = f"{shared_files_directory}.torrent"
-        torrent_directory = "torrents"
+        # shared_files_directory = r"TO_BE_SHARED"
+        # torrent_name = f"{shared_files_directory}.torrent"
+        # torrent_directory = "torrents"
         # Generate the torrent for the files in the 'files' subdirectory
         # generate_torrent(
         #     torrent_directory,
@@ -44,11 +56,13 @@ class Network:
         #     self.tracker_info["url"],
         #     torrent_name,
         # )
+        for torrent_index,(peer_id, peer_info) in enumerate(self.peer_infos.items()):
 
-        for peer_id, peer_info in self.peer_infos.items():
-            torrent_path = os.path.join(torrent_directory, torrent_name)
+            # torrent_path = os.path.join(torrent_directory, torrent_name)
+
             torrent = Torrent()
-            torrent.load_torrent(torrent_path)
+
+            torrent.load_torrent(self.shared_files_directory[torrent_index])
 
             peer_ip, peer_port = peer_info["address"]
             peer_directory = peer_info["directory"]
@@ -127,12 +141,15 @@ class Network:
 
 if __name__ == "__main__":
     # Number of peer in the network
-    num_peer =2
+    num_peer =1
     # The peer peer_info can be specified by users are generated automatically
-    peer_infos = generate_peer_info(num_peer)
-    tracker_info = generate_tracker_info()
+    # peer_infos = generate_peer_info(num_peer)
+    # tracker_info = generate_tracker_info()
 
-    network = Network(peer_infos, tracker_info)
+    network = Network()
+    # network.updata_torrent(["./TO_BE_SHARED/TO_BE_SHARED.torrent","/TO_BE_SHARED copy/TO_BE_SHARED copy.torrent","/TO_BE_SHARED copy 2/TO_BE_SHARED copy 2.torrent"])
+    # network.update_torrent(["./torrents/TO_BE_SHARED.torrent"])
+    network.update_torrent(["./torrents/TO_BE_SHARED.torrent","./torrents/TO_BE_SHARED copy.torrent","./torrents/TO_BE_SHARED copy 2.torrent"])
     print(network.num_peer)
     network.setup()
     network.run()
