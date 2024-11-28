@@ -141,9 +141,19 @@ def get_external_ip():
         return ip
     except Exception as e:
         return "127.0.0.1"
+
+def get_external_ip__():
+    """Fetch the public IP address of the machine using an external service."""
+    try:
+        response = requests.get('https://api.ipify.org')  # Use an external service to get public IP
+        return response.text  # The IP address is returned as a string
+    except requests.exceptions.RequestException as e:
+        print(f"Error getting public IP: {e}")
+        return "127.0.0.1"  # Return a default IP in case of failure
+
 def generate_peer_info(num_peer,peer_port):
     peer_info = {}
-    peer_ip = get_external_ip()
+    peer_ip = get_external_ip__()
     peer_id = generate_peer_id(f"A{peer_port}")
     directory = f"peer_A{peer_port}_{peer_ip}"
     files_directory = "TO_BE_SHARED"
