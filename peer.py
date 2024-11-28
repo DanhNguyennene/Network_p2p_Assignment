@@ -163,7 +163,8 @@ class Peer:
                 
                 # Iterate over the list of available peers
                 for peer in self.available_peers:
-                
+                    if self.is_seeder:
+                        continue        
                     peer_ip = peer.get("ip")
                     peer_port = peer.get("port")
                     #avoid same ip
@@ -182,8 +183,7 @@ class Peer:
 
                     # Mark the peer as connected
                     connected_peers.add(peer_key)
-                    if self.is_seeder:
-                        continue    
+
                     # Start a thread to handle the connection and download
                     self.executor.submit(self._connect_and_download, peer_ip, peer_port)
 
@@ -432,17 +432,16 @@ class Peer:
                 print(
                     f"[DEBUG] _connect_and_download() {self.id} Connected to peer at {peer_ip}:{peer_port}"
                 )
-                if self.is_seeder:
-                    print(
-                        f"[DEBUG] _connect_and_download() {self.id} Peer {peer_ip}:{peer_port} is a seeder"
-                    )
-                    return
+
                 # Perform the download process
 
                 self.download_piece(client_socket, peer_ip, peer_port)
 
         except Exception as e:
             print(f"[ERROR] Failed to connect to peer {peer_ip}:{peer_port}: {e}")
+        finally:
+            print(f"[DEBUG] _connect_and_download() {self.id} Closing connection to {peer_ip}:{peer_port}")
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).close()
 
     def download_piece(self, client_socket, peer_ip, peer_port,unchoke_retry=5):
         """Download all pieces sequentially from a peer."""
@@ -596,7 +595,7 @@ class Peer:
             print(f"[ERROR] Error downloading from {peer_ip}:{peer_port}: {e}")
         finally:
             self._update_is_seeder()
-            client_socket.close()
+            print(f"[DEBUG] download_piece() UPDATES SEEDER STATUS {self.id} Closing connection to {peer_ip}:{peer_port}")
             time.sleep(1)
 
 
