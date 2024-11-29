@@ -153,7 +153,7 @@ def get_external_ip__():
 
 def generate_peer_info(num_peer,peer_port):
     peer_info = {}
-    peer_ip = get_external_ip__()
+    peer_ip = get_external_ip()
     peer_id = generate_peer_id(f"A{peer_port}")
     directory = f"peer_A{peer_port}_{peer_ip}"
     files_directory = "TO_BE_SHARED"
