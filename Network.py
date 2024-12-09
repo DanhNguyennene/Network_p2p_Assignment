@@ -48,7 +48,9 @@ class Network:
             self.peer_infos[peer_id] = peer_info
             self.peer_to_run[peer_id] = peer_info
         self.setup()
-        threading.Thread(target=self.run, daemon=True).start()
+        # threading.Thread(target=self.run, daemon=True).start()
+        self.run()
+        
     def setup(self):
         # shared_files_directory = r"TO_BE_SHARED"
         # torrent_name = f"{shared_files_directory}.torrent"

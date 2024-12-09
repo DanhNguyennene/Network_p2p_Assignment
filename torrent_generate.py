@@ -179,7 +179,9 @@ def get_external_ip():
 
 # Create the torrent
 mk = makeTorrent(announce=f"http://{get_external_ip()}:8000/")
-name = './TO_BE_SHARED copy 2'
+# name = './TO_BE_SHARED copy 2'
+# name = './TO_BE_SHARED copy'
+name = './TO_BE_SHARED'
 mk.multi_file(name)
 
 # Write the encoded torrent to a file
