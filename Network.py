@@ -37,7 +37,7 @@ class Network:
         self.peer_port = []
         self.peer_to_run = {}
 
-    def update_torrent_and_run(self,torrent_paths):
+    def update_torrent_and_run(self,torrent_paths,no_run_thread=False):
         self.shared_files_directory = [torrent_path for torrent_path in torrent_paths if torrent_path not in self.torrent_taken]
         self.torrent_taken.update(self.shared_files_directory)
         self.peer_to_run = {}
@@ -48,8 +48,10 @@ class Network:
             self.peer_infos[peer_id] = peer_info
             self.peer_to_run[peer_id] = peer_info
         self.setup()
-        threading.Thread(target=self.run, daemon=True).start()
-        #self.run()
+        if not no_run_thread:
+            threading.Thread(target=self.run, daemon=True).start()
+        else:
+            self.run()
         
     def setup(self):
         # shared_files_directory = r"TO_BE_SHARED"

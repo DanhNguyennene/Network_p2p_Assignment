@@ -14,7 +14,7 @@ if __name__ == "__main__":
     network = Network()
     # network.updata_torrent(["./TO_BE_SHARED/TO_BE_SHARED.torrent","/TO_BE_SHARED copy/TO_BE_SHARED copy.torrent","/TO_BE_SHARED copy 2/TO_BE_SHARED copy 2.torrent"])
     # network.update_torrent_and_run(["./torrents/TO_BE_SHARED.torrent"])
-    network.update_torrent_and_run(["./torrents/TO_BE_SHARED.torrent","./torrents/TO_BE_SHARED_copy.torrent","./torrents/TO_BE_SHARED_copy_2.torrent"])
+    network.update_torrent_and_run(["./torrents/TO_BE_SHARED.torrent","./torrents/TO_BE_SHARED_copy.torrent","./torrents/TO_BE_SHARED_copy_2.torrent"],no_run_thread=True)
 
 
 
