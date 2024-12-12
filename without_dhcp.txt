@@ -1,0 +1,2 @@
+nmcli connection modify ens33 ipv4.method manual ipv4.addresses <IP_ADDRESS>/<SUBNET_MASK> ipv4.gateway <GATEWAY_IP> ipv4.dns <DNS_SERVER_IP> connection.autoconnect yes
+nmcli connection up ens33
