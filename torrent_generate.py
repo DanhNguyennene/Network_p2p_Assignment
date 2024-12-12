@@ -182,8 +182,10 @@ mk = makeTorrent(announce=f"http://{get_external_ip()}:8000/")
 # name = './TO_BE_SHARED copy 2'
 # name = './TO_BE_SHARED copy'
 name = './TO_BE_SHARED'
-mk.multi_file(name)
+name = ['./TO_BE_SHARED','./TO_BE_SHARED_copy','./TO_BE_SHARED_copy_2']
+for i in name:
+    mk.multi_file(i)
 
-# Write the encoded torrent to a file
-with open(f'./torrents/{name}.torrent', 'wb') as tf:
-    tf.write(mk.getBencoded())
+    # Write the encoded torrent to a file
+    with open(f'./torrents/{i}.torrent', 'wb') as tf:
+        tf.write(mk.getBencoded())
