@@ -31,13 +31,13 @@ class App:
         self.add_torrent_button = tk.Button(self.root, text="Add Torrent", command=self.add_torrent)
         self.add_torrent_button.pack()
 
-        # # Simulate Download (will run in a separate thread)
-        # self.download_button = tk.Button(self.root, text="Start Download", command=self.start_download)
-        # self.download_button.pack()
+        # Simulate Download (will run in a separate thread)
+        self.download_button = tk.Button(self.root, text="Start Download", command=self.start_download)
+        self.download_button.pack()
 
-        # # List Peers section
-        # self.list_peers_button = tk.Button(self.root, text="List Peers", command=self.list_peers)
-        # self.list_peers_button.pack()
+        # List Peers section
+        self.list_peers_button = tk.Button(self.root, text="List Peers", command=self.list_peers)
+        self.list_peers_button.pack()
 
     def browse_torrent(self):
         """Open a file dialog to select one or more torrent files."""
