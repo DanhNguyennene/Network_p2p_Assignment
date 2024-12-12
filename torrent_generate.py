@@ -182,6 +182,7 @@ mk = makeTorrent(announce=f"http://{get_external_ip()}:8000/")
 # name = './TO_BE_SHARED copy 2'
 # name = './TO_BE_SHARED copy'
 name = './TO_BE_SHARED'
+name = ['./TO_BE_SHARED','./TO_BE_SHARED_copy','./TO_BE_SHARED_copy_2']
 mk.multi_file(name)
 
 # Write the encoded torrent to a file
