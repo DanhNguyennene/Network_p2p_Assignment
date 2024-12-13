@@ -2,7 +2,7 @@ from threading import Lock
 
 
 class DownloadQueue:
-    def __init__(self, total_pieces, capacity=1):
+    def __init__(self, total_pieces, capacity=30000):
         """
         Initialize the DownloadQueue with bitfield management and choking capacity.
 

@@ -28,7 +28,7 @@ class App:
         self.browse_button = tk.Button(self.root, text="Browse", command=self.browse_torrent)
         self.browse_button.pack()
 
-        self.add_torrent_button = tk.Button(self.root, text="Add Torrent", command=self.add_torrent)
+        self.add_torrent_button = tk.Button(self.root, text="Add Torent", command=self.add_torrent)
         self.add_torrent_button.pack()
 
         # Simulate Download (will run in a separate thread)

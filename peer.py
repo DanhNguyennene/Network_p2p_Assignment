@@ -48,7 +48,7 @@ class Peer:
         self.message_factory = MessageFactory()
         self.message_parser = MessageParser()
 
-        self._update_is_seeder()
+        # self._update_is_seeder()
 
     # def _update_is_seeder(self):
     #     self.is_seeder
@@ -297,7 +297,7 @@ class Peer:
                             data["length"],
                         )
                         piece_data = self.piece_manager.get_piece(index)
-                        if piece_data:
+                        if self.piece_manager.get_bitfield()[index] == 1:
                             have_piece = self.message_factory.have(index)
                             conn.sendall(have_piece)
                             print(f"[DEBUG] handle_client() {self.id} have piece {index} ")
@@ -524,12 +524,13 @@ class Peer:
             while True:
 
                 missing_piece = self.piece_manager.get_next_missing_piece()
+                missing_piece = missing_piece[missing_index:]
 
                 # If no more missing pieces, break the loop
                 if missing_piece is None:
                     print("[INFO] All pieces have been downloaded.")
                     break
-                if missing_index >= len(missing_piece):
+                if missing_index > len(missing_piece):
                     time.sleep(2)
                     continue
                 print(
@@ -537,7 +538,7 @@ class Peer:
                 )
 
                 # Request the next missing piece
-                index, begin = missing_piece[missing_index], 0
+                index, begin = missing_piece[0], 0
                 request_msg = self.message_factory.request(index, begin, self.piece_length)
                 client_socket.sendall(request_msg)
 
@@ -585,7 +586,6 @@ class Peer:
                             f"[INFO] Peer {peer_ip} does not have the requested piece"
                         )
                         missing_index+=1
-                        missing_piece = missing_piece[missing_index:]
 
                 except socket.timeout:
                     print("[WARNING] Timeout while receiving piece. Retrying...")
@@ -594,7 +594,7 @@ class Peer:
         except Exception as e:
             print(f"[ERROR] Error downloading from {peer_ip}:{peer_port}: {e}")
         finally:
-            self._update_is_seeder()
+            # self._update_is_seeder()
             print(f"[DEBUG] download_piece() UPDATES SEEDER STATUS {self.id} Closing connection to {peer_ip}:{peer_port}")
             time.sleep(1)
 
